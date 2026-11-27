@@ -19,6 +19,7 @@ const online = computed(() => isOnline(server.value, props.now))
 const switches = computed(() => props.site.list?.sysConfig ?? {})
 const showTraffic = computed(() => switches.value.show_tf !== false)
 const protocols = computed(() => [4, 6].filter(version => server.value['ip_v' + version] === '1'))
+const agentVersion = computed(() => fieldText(server.value.agent_version))
 const architecture = computed(() => fieldText(server.value.arch))
 const location = computed(() => [server.value.os, server.value.region].map(fieldText).filter(Boolean).join(' · '))
 const route = computed(() => ({
@@ -30,14 +31,13 @@ const metrics = computed(() => {
   const cores = number(data.cpu_cores)
   return [{
     key: 'cpu', label: 'CPU', percent: nonNegative(data.cpu),
-    capacity: cores > 0 ? format(cores, ' ' + t('cores')) : '',
-    agent: fieldText(data.agent_version)
+    capacity: cores > 0 ? format(cores, ' ' + t('cores')) : ''
   }, ...capacityRows(data).filter(([key]) => key !== 'traffic' || showTraffic.value).map(
     ([key, used, total, multiplier]) => {
       const current = nonNegative(used)
       return { key, label: t(key), percent: percent(current, total), capacity: capacityLabel(current, total, multiplier) }
     }
-  )].filter(metric => metric.percent !== null || metric.capacity || metric.agent)
+  )].filter(metric => metric.percent !== null || metric.capacity)
 })
 const connections = computed(() => [
   [t('processes'), 'processes'], ['TCP', 'tcp_conn'], ['UDP', 'udp_conn']
@@ -112,10 +112,11 @@ function progress(value) {
         <span v-if="architecture" class="aqua-arch" :title="t('architecture')">{{ architecture }}</span>
         <span v-if="location">{{ location }}</span>
       </p>
-      <div v-if="protocols.length" class="aqua-server-tags">
+      <div v-if="protocols.length || agentVersion" class="aqua-server-tags">
         <span v-for="version in protocols" :key="version" class="aqua-ip-tag"
           :title="'IPv' + version + ' ' + t('reachable')"
         >v{{ version }}</span>
+        <span v-if="agentVersion" class="aqua-agent" :title="agentVersion">{{ agentVersion }}</span>
       </div>
     </header>
     <div v-if="metrics.length" class="aqua-server-usage">
@@ -123,10 +124,7 @@ function progress(value) {
         <span>{{ metric.label }}</span>
         <span v-if="metric.percent !== null" class="aqua-track" aria-hidden="true"><i :style="{ width: progress(metric.percent) }"></i></span>
         <b v-if="metric.percent !== null" class="aqua-measure-value">{{ percentLabel(metric.percent) }}</b>
-        <span v-if="metric.capacity || metric.agent" class="aqua-measure-capacity">
-          <span v-if="metric.capacity">{{ metric.capacity }}</span>
-          <span v-if="metric.agent" class="aqua-agent" :title="t('agent_version') + ' ' + metric.agent">{{ t('agent') }} {{ metric.agent }}</span>
-        </span>
+        <span v-if="metric.capacity" class="aqua-measure-capacity">{{ metric.capacity }}</span>
       </div>
     </div>
     <div v-if="connections.length || boot || directions.length" class="aqua-server-network">
