@@ -15,9 +15,7 @@ const columns = computed(() => {
 </script>
 
 <template>
-  <div v-if="rows.length" class="aqua-card-probes" :class="{ 'aqua-path-paired': columns.length > 1 }"
-    :style="{ flexGrow: columns[0].length + 1 }"
-  >
+  <div v-if="rows.length" class="aqua-card-probes" :class="{ 'aqua-path-paired': columns.length > 1 }">
     <table v-for="(column, index) of columns" :key="index" class="aqua-path-table">
       <thead>
         <tr>

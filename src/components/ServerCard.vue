@@ -4,7 +4,7 @@ import { RouterLink } from 'vue-router'
 import ProbeMatrix from './ProbeMatrix.vue'
 import { useMonitor } from '../composables/useMonitor.js'
 import { useLabels } from '../utils/i18n.js'
-import { bytes, capacityLabel, capacityRows, epochMillis, expiryInfo, format, isOnline,
+import { bytes, capacityLabel, capacityRows, epochMillis, expiryInfo, fieldText, format, isOnline,
   number, percent, percentLabel, probeRows, timeLabel } from '../utils/metrics.js'
 
 const props = defineProps({
@@ -22,6 +22,9 @@ const protocols = computed(() => [4, 6].filter(version => server.value['ip_v' + 
 const agentVersion = computed(() => fieldText(server.value.agent_version))
 const architecture = computed(() => fieldText(server.value.arch))
 const location = computed(() => [server.value.os, server.value.region].map(fieldText).filter(Boolean).join(' · '))
+const group = computed(() => fieldText(server.value.server_group))
+const loadAverage = computed(() => fieldText(server.value.load_avg))
+const kernel = computed(() => fieldText(server.value.kernel_version))
 const route = computed(() => ({
   name: 'server', params: { id: String(server.value.id) },
   query: sites.length > 1 ? { site: String(props.site.index) } : undefined
@@ -85,10 +88,6 @@ const renewal = computed(() => expiry.value && ['0', '1'].includes(server.value.
   ? t(server.value.auto_renewal === '1' ? 'renewOn' : 'renewOff')
   : '')
 
-function fieldText(value) {
-  return typeof value === 'string' ? value.trim() : ''
-}
-
 function nonNegative(value) {
   const reading = number(value)
   return reading !== null && reading >= 0 ? reading : null
@@ -117,11 +116,18 @@ function progress(value) {
         <span v-if="architecture" class="aqua-arch" :title="t('architecture') + ' ' + architecture">{{ architecture }}</span>
         <span v-if="location" :title="location">{{ location }}</span>
       </p>
-      <div v-if="protocols.length || agentVersion" class="aqua-server-tags">
+      <span v-if="group" class="aqua-group-tag" :title="t('server_group') + ' · ' + group">{{ group }}</span>
+      <div v-if="protocols.length || agentVersion || loadAverage || kernel" class="aqua-server-tags">
         <span v-for="version in protocols" :key="version" class="aqua-ip-tag"
           :title="'IPv' + version + ' ' + t('reachable')"
         >v{{ version }}</span>
-        <span v-if="agentVersion" class="aqua-agent" :title="agentVersion">{{ agentVersion }}</span>
+        <span v-if="agentVersion" class="aqua-agent" :title="t('agent') + ' · ' + agentVersion">{{ agentVersion }}</span>
+        <span v-if="loadAverage" class="aqua-server-load" :title="t('load_avg') + ' · ' + loadAverage">
+          {{ t('loadAverageShort') }} <b>{{ loadAverage }}</b>
+        </span>
+        <span v-if="kernel" class="aqua-server-kernel" :title="t('kernel_version') + ' · ' + kernel">
+          {{ t('kernelShort') }} <b>{{ kernel }}</b>
+        </span>
       </div>
     </header>
     <div class="aqua-server-body">

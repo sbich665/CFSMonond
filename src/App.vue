@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
-import { RouterView } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 import { version as themeVersion } from '../package.json'
+import ServerSidebar from './components/ServerSidebar.vue'
 import ThemeSettings from './components/ThemeSettings.vue'
 import TurnstileGate from './components/TurnstileGate.vue'
 import { useMonitor } from './composables/useMonitor.js'
@@ -12,8 +13,12 @@ import { useLabels } from './utils/i18n.js'
 const { runtime, sites, challenges, themeOptions, bootstrap } = useMonitor()
 const { t, locale } = useLabels()
 const settings = useThemeSettings()
+const route = useRoute()
+const router = useRouter()
 const ready = ref(false)
 const settingsOpen = ref(false)
+const sidebarVisible = ref(themeOptions.value.show_server_sidebar)
+const selection = ref(null)
 const media = window.matchMedia('(prefers-color-scheme: dark)')
 const systemDark = ref(media.matches)
 const primary = computed(() => sites[0])
@@ -23,6 +28,17 @@ const challenge = computed(() => challenges.value[0])
 
 function changeSystem({ matches }) {
   systemDark.value = matches
+}
+
+function setSidebar(visible) {
+  sidebarVisible.value = visible
+  if (!visible) selection.value = null
+}
+watch(() => themeOptions.value.show_server_sidebar, setSidebar)
+
+function selectServers(filter) {
+  selection.value = filter
+  if (route.name !== 'dashboard') void router.push({ name: 'dashboard' })
 }
 
 watchEffect(() => {
@@ -70,7 +86,14 @@ onUnmounted(() => media.removeEventListener('change', changeSystem))
       <TurnstileGate v-if="challenge" :key="challenge.base" :challenge="challenge" />
       <p v-if="!ready" class="aqua-state" role="status">{{ t('opening') }}</p>
       <RouterView v-else v-slot="{ Component, route }">
-        <component :is="Component" v-if="Component" :key="route.fullPath" />
+        <div v-if="Component" class="aqua-layout">
+          <ServerSidebar v-show="sidebarVisible" :selection="selection" @select="selectServers" />
+          <main class="aqua-main">
+            <component :is="Component" :key="route.fullPath" :sidebar-visible="sidebarVisible"
+              v-bind="route.name === 'dashboard' ? { selection } : {}" @toggle-sidebar="setSidebar(!sidebarVisible)"
+            />
+          </main>
+        </div>
         <p v-else class="aqua-state" role="alert">{{ t('loadError') }} · {{ route.path }}</p>
       </RouterView>
       <footer class="aqua-footer">

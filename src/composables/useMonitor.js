@@ -1,4 +1,4 @@
-import { inject, reactive, shallowReactive, shallowRef } from 'vue'
+import { computed, inject, reactive, shallowReactive, shallowRef } from 'vue'
 import { createApi } from '../utils/api.js'
 import { adminUrl, normalizeThemeOptions } from '../utils/config.js'
 
@@ -44,6 +44,7 @@ export function createMonitor(runtime) {
     })
     return site
   })
+  const entries = computed(() => sites.flatMap(site => (site.list?.servers ?? []).map(row => ({ site, row }))))
 
   async function bootstrap() {
     await Promise.all(sites.map(async site => {
@@ -76,7 +77,7 @@ export function createMonitor(runtime) {
     return request
   }
 
-  return { runtime, sites, challenges, paused, themeOptions, bootstrap, login, list }
+  return { runtime, sites, entries, challenges, paused, themeOptions, bootstrap, login, list }
 }
 
 export function useMonitor() {

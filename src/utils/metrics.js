@@ -47,6 +47,10 @@ export function number(value) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+export function fieldText(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
 export function format(value, suffix = '') {
   return value === null || value === undefined || value === ''
     ? '—'

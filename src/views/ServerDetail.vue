@@ -10,6 +10,9 @@ import { adminUrl } from '../utils/config.js'
 import { useLabels } from '../utils/i18n.js'
 import { OFFLINE_AFTER_MS, PROBES, bytes, epochMillis, format, gpuDevices, isOnline, number, percent, probeRows, quotaBytes, timeLabel } from '../utils/metrics.js'
 
+defineProps({ sidebarVisible: { type: Boolean, required: true } })
+defineEmits(['toggle-sidebar'])
+
 const route = useRoute()
 const { sites, login, themeOptions } = useMonitor()
 const { t, locale } = useLabels()
@@ -247,79 +250,77 @@ const charts = computed(() => {
 </script>
 
 <template>
-  <div class="aqua-layout">
-    <nav class="aqua-sidebar">
-      <RouterLink class="aqua-side-button" :to="{ name: 'dashboard' }">{{ t('allServers') }}</RouterLink>
-    </nav>
-    <main class="aqua-main">
-      <p v-if="currentError" class="aqua-state" role="alert">{{ t('loadError') }} · {{ t(currentError) }}</p>
-      <p v-else-if="!server" class="aqua-state" role="status">{{ t('loading') }}</p>
-      <p v-if="site?.config && !canRead(site)" class="aqua-state">{{ t('loginRequired') }} <a v-if="themeOptions.show_admin_link" :href="adminUrl(site.base)">{{ t('admin') }}</a></p>
-      <template v-if="server">
-        <div class="aqua-page-header aqua-detail-header">
-          <div>
-            <div class="aqua-detail-name">
-              <h1>{{ server.name || id }}</h1>
-              <span class="aqua-status"><i class="aqua-lamp" :class="{ 'is-offline': !online }"></i>{{ t(online ? 'online' : 'offline') }}</span>
-            </div>
-            <p class="aqua-detail-subtitle">{{ [server.arch, server.os, server.region].filter(Boolean).join(' · ') }}</p>
-          </div>
-          <RouterLink class="aqua-button" :to="{ name: 'dashboard' }">{{ t('back') }}</RouterLink>
+  <p v-if="currentError" class="aqua-state" role="alert">{{ t('loadError') }} · {{ t(currentError) }}</p>
+  <p v-else-if="!server" class="aqua-state" role="status">{{ t('loading') }}</p>
+  <p v-if="site?.config && !canRead(site)" class="aqua-state">{{ t('loginRequired') }} <a v-if="themeOptions.show_admin_link" :href="adminUrl(site.base)">{{ t('admin') }}</a></p>
+  <template v-if="server">
+    <div class="aqua-page-header aqua-detail-header">
+      <div>
+        <div class="aqua-detail-name">
+          <h1>{{ server.name || id }}</h1>
+          <span class="aqua-status"><i class="aqua-lamp" :class="{ 'is-offline': !online }"></i>{{ t(online ? 'online' : 'offline') }}</span>
         </div>
-        <p v-if="socketState && socketState !== 'live'" class="aqua-state" role="status">
-          {{ t(socketState) }}
-          <button v-if="socketState === 'paused'" class="aqua-button" type="button" @click="subscribe(true)">{{ t('continue') }}</button>
-        </p>
-        <section class="aqua-panel aqua-history">
-          <div class="aqua-panel-heading">
-            <h2>{{ t('history') }}</h2>
-            <label class="aqua-range-label">{{ t('range') }}
-              <select class="aqua-range" :value="range" @change="loadHistory(Number($event.target.value))">
-                <option v-for="hours of canUseRange" :key="hours" :value="hours">{{ clockLabel(hours) }}</option>
-              </select>
-            </label>
+        <p class="aqua-detail-subtitle">{{ [server.arch, server.os, server.region].filter(Boolean).join(' · ') }}</p>
+      </div>
+      <div class="aqua-page-controls">
+        <button class="aqua-button aqua-sidebar-toggle" type="button" aria-controls="aqua-server-sidebar"
+          :aria-expanded="sidebarVisible" @click="$emit('toggle-sidebar')"
+        >{{ t(sidebarVisible ? 'hideSidebar' : 'showSidebar') }}</button>
+        <RouterLink class="aqua-button" :to="{ name: 'dashboard' }">{{ t('back') }}</RouterLink>
+      </div>
+    </div>
+    <p v-if="socketState && socketState !== 'live'" class="aqua-state" role="status">
+      {{ t(socketState) }}
+      <button v-if="socketState === 'paused'" class="aqua-button" type="button" @click="subscribe(true)">{{ t('continue') }}</button>
+    </p>
+    <section class="aqua-panel aqua-history">
+      <div class="aqua-panel-heading">
+        <h2>{{ t('history') }}</h2>
+        <label class="aqua-range-label">{{ t('range') }}
+          <select class="aqua-range" :value="range" @change="loadHistory(Number($event.target.value))">
+            <option v-for="hours of canUseRange" :key="hours" :value="hours">{{ clockLabel(hours) }}</option>
+          </select>
+        </label>
+      </div>
+      <p v-if="fetchingHistory" class="aqua-state" role="status">{{ t('loading') }}</p>
+      <p v-else-if="historyError" class="aqua-state" role="alert">{{ t('loadError') }} · {{ t(historyError) }}</p>
+      <div v-else class="aqua-history-charts">
+        <MetricsChart v-for="chart of charts" :key="chart.title" v-bind="chart" />
+      </div>
+    </section>
+    <div class="aqua-field-panels">
+      <section v-if="currentProbes.length" class="aqua-panel aqua-section aqua-wide">
+        <h2>{{ t('delay') }} / {{ t('loss') }}</h2>
+        <div class="aqua-probes">
+          <div class="aqua-probe-row aqua-probe-labels"><span>{{ t('line') }}</span><span>{{ t('target') }}</span><span>{{ t('delay') }}</span><span>{{ t('loss') }}</span></div>
+          <div v-for="row of currentProbes" :key="row.id" class="aqua-probe-row">
+            <span>{{ row.name }}</span><span>{{ row.address || '—' }}</span>
+            <span :class="{ 'aqua-timeout': row.delayTimeout }">{{ row.delay || '—' }}</span>
+            <span :class="{ 'aqua-timeout': row.lossTimeout }">{{ row.lossRate || '—' }}</span>
           </div>
-          <p v-if="fetchingHistory" class="aqua-state" role="status">{{ t('loading') }}</p>
-          <p v-else-if="historyError" class="aqua-state" role="alert">{{ t('loadError') }} · {{ t(historyError) }}</p>
-          <div v-else class="aqua-history-charts">
-            <MetricsChart v-for="chart of charts" :key="chart.title" v-bind="chart" />
-          </div>
-        </section>
-        <div class="aqua-field-panels">
-          <section v-if="currentProbes.length" class="aqua-panel aqua-section aqua-wide">
-            <h2>{{ t('delay') }} / {{ t('loss') }}</h2>
-            <div class="aqua-probes">
-              <div class="aqua-probe-row aqua-probe-labels"><span>{{ t('line') }}</span><span>{{ t('target') }}</span><span>{{ t('delay') }}</span><span>{{ t('loss') }}</span></div>
-              <div v-for="row of currentProbes" :key="row.id" class="aqua-probe-row">
-                <span>{{ row.name }}</span><span>{{ row.address || '—' }}</span>
-                <span :class="{ 'aqua-timeout': row.delayTimeout }">{{ row.delay || '—' }}</span>
-                <span :class="{ 'aqua-timeout': row.lossTimeout }">{{ row.lossRate || '—' }}</span>
-              </div>
-            </div>
-          </section>
-          <FieldPanel v-for="[name, rows] of fieldSets" :key="name" :title="t(name)" :rows="rows" />
-          <section v-if="Array.isArray(server.latestReportUpdates)" class="aqua-panel aqua-section aqua-wide">
-            <h2>{{ t('reports') }}</h2>
-            <div v-for="(report, index) of server.latestReportUpdates" :key="index" class="aqua-report">
+        </div>
+      </section>
+      <FieldPanel v-for="[name, rows] of fieldSets" :key="name" :title="t(name)" :rows="rows" />
+      <section v-if="Array.isArray(server.latestReportUpdates)" class="aqua-panel aqua-section aqua-wide">
+        <h2>{{ t('reports') }}</h2>
+        <div v-for="(report, index) of server.latestReportUpdates" :key="index" class="aqua-report">
+          <dl class="aqua-fields">
+            <div><dt>{{ t('id') }}</dt><dd>{{ report.serverId }}</dd></div>
+            <div><dt>{{ t('reportTs') }}</dt><dd>{{ timeLabel(report.reportTs, true) }}</dd></div>
+            <div><dt>{{ t('reportAge') }}</dt><dd>{{ format(report.reportAgeMs, ' ms') }}</dd></div>
+          </dl>
+          <div v-if="Array.isArray(report.samples)" class="aqua-sample-grid">
+            <div v-for="(sample, position) of report.samples" :key="position" class="aqua-sample">
+              <h3>{{ timeLabel(sample.ts, true) }}</h3>
               <dl class="aqua-fields">
-                <div><dt>{{ t('id') }}</dt><dd>{{ report.serverId }}</dd></div>
-                <div><dt>{{ t('reportTs') }}</dt><dd>{{ timeLabel(report.reportTs, true) }}</dd></div>
-                <div><dt>{{ t('reportAge') }}</dt><dd>{{ format(report.reportAgeMs, ' ms') }}</dd></div>
-              </dl>
-              <div v-if="Array.isArray(report.samples)" class="aqua-sample-grid">
-                <div v-for="(sample, position) of report.samples" :key="position" class="aqua-sample">
-                  <h3>{{ timeLabel(sample.ts, true) }}</h3>
-                  <dl class="aqua-fields">
-                    <div v-for="(value, key) in sample.data || sample.payload || sample.metrics || {}" :key="key">
-                      <dt>{{ t(key) }}</dt><dd>{{ fieldValue(key, value) }}</dd>
-                    </div>
-                  </dl>
+                <div v-for="(value, key) in sample.data || sample.payload || sample.metrics || {}" :key="key">
+                  <dt>{{ t(key) }}</dt><dd>{{ fieldValue(key, value) }}</dd>
                 </div>
-              </div>
+              </dl>
             </div>
-          </section>
+          </div>
         </div>
-      </template>
-    </main>
-  </div>
+      </section>
+    </div>
+  </template>
 </template>
