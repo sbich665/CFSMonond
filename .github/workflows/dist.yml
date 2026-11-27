@@ -1,0 +1,39 @@
+name: Build dist
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cfsmonond-dist
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAGES_PUSH_TOKEN || github.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm test
+      - name: Build static theme
+        run: pnpm build:github-page
+        env:
+          API_BASE: ${{ secrets.API_BASE }}
+          TITLE: ${{ secrets.TITLE }}
+          BACKGROUND_IMAGE: ${{ secrets.BACKGROUND_IMAGE }}
+          CSP_API: ${{ secrets.CSP_API }}
+          CSP_STATIC: ${{ secrets.CSP_STATIC }}
+      - name: Append the build to dist
+        run: bash scripts/publish-dist.sh

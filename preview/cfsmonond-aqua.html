@@ -1,0 +1,1411 @@
+<div id="cfs-aqua-preview" lang="zh-CN">
+  <div class="aqua-window">
+    <header class="aqua-toolbar">
+      <div class="aqua-brand">
+        <span class="aqua-rack" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>CFSMonond</span>
+      </div>
+      <span class="aqua-preview-label">演示数据</span>
+      <button class="aqua-button aqua-admin" type="button" disabled>管理</button>
+    </header>
+
+    <div class="aqua-layout">
+      <nav class="aqua-sidebar" aria-label="服务器区域">
+        <button class="aqua-side-button" type="button" data-region="" aria-pressed="true">
+          <span class="aqua-icon-stack" aria-hidden="true">▤</span> 全部服务器
+        </button>
+        <div class="aqua-region-list">
+          <span class="aqua-nav-label">区域</span>
+          <button class="aqua-side-button" type="button" data-region="SG" aria-pressed="false">新加坡</button>
+          <button class="aqua-side-button" type="button" data-region="JP" aria-pressed="false">东京</button>
+          <button class="aqua-side-button" type="button" data-region="DE" aria-pressed="false">法兰克福</button>
+          <button class="aqua-side-button" type="button" data-region="US" aria-pressed="false">洛杉矶</button>
+        </div>
+      </nav>
+
+      <main class="aqua-main">
+        <section id="aqua-overview">
+          <div class="aqua-page-header">
+            <h1>服务器总览</h1>
+            <input class="aqua-search" type="search" placeholder="搜索服务器" aria-label="搜索服务器">
+          </div>
+          <dl class="aqua-ribbon aqua-totals">
+            <div><dt><span class="aqua-lamp is-blue"></span> 总数</dt><dd>4</dd></div>
+            <div><dt><span class="aqua-lamp"></span> 在线</dt><dd>3</dd></div>
+            <div><dt><span class="aqua-lamp is-offline"></span> 离线</dt><dd>1</dd></div>
+          </dl>
+          <div class="aqua-server-grid" aria-label="服务器列表"></div>
+          <p class="aqua-empty" hidden>没有符合条件的服务器。</p>
+        </section>
+
+        <section id="aqua-detail" hidden>
+          <div class="aqua-page-header aqua-detail-header">
+            <div>
+              <div class="aqua-detail-name">
+                <h1 id="aqua-server-name"></h1>
+                <span class="aqua-status" id="aqua-server-status"></span>
+              </div>
+              <p class="aqua-detail-subtitle"></p>
+            </div>
+            <button class="aqua-button" type="button" data-back><span aria-hidden="true">←</span> 返回总览</button>
+          </div>
+          <dl class="aqua-ribbon aqua-detail-ribbon" aria-label="当前指标"></dl>
+
+          <section class="aqua-panel aqua-history">
+            <div class="aqua-panel-heading">
+              <h2>资源历史</h2>
+              <label class="aqua-range-label">时间范围
+                <select class="aqua-range" aria-label="历史时间范围">
+                  <option value="0.167">10 分钟</option>
+                  <option value="0.5">30 分钟</option>
+                  <option value="1">1 小时</option>
+                  <option value="6">6 小时</option>
+                  <option value="12">12 小时</option>
+                  <option value="24">24 小时</option>
+                </select>
+              </label>
+            </div>
+            <div class="aqua-chart-legend" aria-hidden="true">
+              <span><i></i>CPU</span><span><i class="aqua-memory-key"></i>内存</span>
+            </div>
+            <div class="aqua-chart">
+              <div class="aqua-y-axis" aria-hidden="true"><span>100%</span><span>50%</span><span>0%</span></div>
+              <canvas class="aqua-trend" role="img" aria-label="CPU 和内存使用率历史模拟曲线"></canvas>
+              <div class="aqua-x-axis" aria-hidden="true"><span></span><span></span><span></span></div>
+            </div>
+          </section>
+
+          <div class="aqua-field-panels"></div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="aqua-footer">
+      <a href="https://github.com/huilang-me/CF-Server-Monitor/" target="_blank" rel="noopener noreferrer">Powered by CF-Server-Monitor</a>
+    </footer>
+  </div>
+
+  <template id="aqua-server-card">
+    <article class="aqua-panel aqua-server">
+      <header class="aqua-server-header">
+        <div class="aqua-server-title">
+          <h2><button class="aqua-server-link" type="button"></button></h2>
+          <span class="aqua-status"></span>
+        </div>
+        <div class="aqua-server-meta">
+          <p class="aqua-server-location">
+            <span class="aqua-server-location-label"></span>
+            <span class="aqua-arch" data-tooltip="CPU 架构"></span>
+          </p>
+          <div class="aqua-server-tags">
+            <span class="aqua-ip-tag" data-ip="4"></span>
+            <span class="aqua-ip-tag" data-ip="6"></span>
+            <span class="aqua-agent"></span>
+          </div>
+        </div>
+      </header>
+      <div class="aqua-server-usage"></div>
+      <div class="aqua-server-network">
+        <dl class="aqua-server-connections" aria-label="进程、连接与开机时间">
+          <div><dt>进程</dt><dd><b data-value="processes"></b></dd></div>
+          <div><dt>TCP</dt><dd><b data-value="tcp"></b></dd></div>
+          <div><dt>UDP</dt><dd><b data-value="udp"></b></dd></div>
+          <div><dt>开机<span class="aqua-sr-only">时间</span></dt><dd><time data-value="boot"></time></dd></div>
+        </dl>
+        <dl class="aqua-transfer" aria-label="上下行实时网速与累计流量">
+          <div class="aqua-transfer-direction">
+            <dt><span aria-hidden="true">↑</span><span class="aqua-sr-only">上行</span></dt>
+            <dd><span class="aqua-sr-only">实时网速</span><b data-value="out"></b></dd>
+            <dd class="aqua-transfer-total"><span class="aqua-sr-only">累计发送</span><b data-value="tx"></b></dd>
+          </div>
+          <div class="aqua-transfer-direction">
+            <dt><span aria-hidden="true">↓</span><span class="aqua-sr-only">下行</span></dt>
+            <dd><span class="aqua-sr-only">实时网速</span><b data-value="in"></b></dd>
+            <dd class="aqua-transfer-total"><span class="aqua-sr-only">累计接收</span><b data-value="rx"></b></dd>
+          </div>
+        </dl>
+      </div>
+      <div class="aqua-card-probes" role="group" aria-label="线路延时与丢包率" hidden></div>
+      <footer class="aqua-card-billing" aria-label="账单与到期信息" hidden>
+        <span data-billing="expiry">到期 <time></time></span>
+        <span data-billing="price">费用 <b></b></span>
+        <span data-billing="renewal"></span>
+      </footer>
+    </article>
+  </template>
+</div>
+
+<style>
+  #cfs-aqua-preview {
+    --aqua-ink: #122a4b;
+    --aqua-muted: #485e76;
+    --aqua-line: #aebdcd;
+    --aqua-blue: #0860d4;
+    --aqua-sea: #077d76;
+    --aqua-well: #e4edf7;
+    --aqua-metal: repeating-linear-gradient(0deg, #fff5 0 1px, #6c7e9220 1px 2px, transparent 2px 4px), linear-gradient(#eff4f7, #c2cfdb 55%, #d2dce5);
+    container: aqua-preview / inline-size;
+    color-scheme: light;
+    color: var(--aqua-ink);
+    font: 14px/1.5 "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+  }
+  #cfs-aqua-preview *, #cfs-aqua-preview *::before, #cfs-aqua-preview *::after { box-sizing: border-box; }
+  #cfs-aqua-preview [hidden] { display: none !important; }
+  #cfs-aqua-preview :is(p, h1, h2, h3, dd, dl) { margin: 0; }
+  #cfs-aqua-preview :is(button, input, select) { font: inherit; color: inherit; }
+  #cfs-aqua-preview :is(button, select):enabled { cursor: pointer; }
+  #cfs-aqua-preview :is(button, input, select, a):focus-visible { outline: 2px solid var(--aqua-blue); outline-offset: 2px; }
+  #cfs-aqua-preview .aqua-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #cfs-aqua-preview .aqua-window {
+    padding: 3px;
+    border: 1px solid #75899e;
+    border-radius: 15px;
+    background: var(--aqua-metal);
+    box-shadow: inset 0 1px #fff, inset 0 -1px #dde7f0;
+  }
+  #cfs-aqua-preview .aqua-toolbar {
+    min-width: 0;
+    min-height: 58px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 15px;
+    background: var(--aqua-metal);
+    border-radius: 11px 11px 0 0;
+  }
+  #cfs-aqua-preview .aqua-brand {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-right: auto;
+    font-size: clamp(18px, 3vw, 28px);
+    font-weight: 750;
+    letter-spacing: -.035em;
+    text-shadow: 0 1px #fff;
+  }
+  #cfs-aqua-preview .aqua-preview-label {
+    color: var(--aqua-muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #cfs-aqua-preview .aqua-rack { display: grid; gap: 1px; width: 33px; flex: none; }
+  #cfs-aqua-preview .aqua-rack i {
+    display: block;
+    height: 8px;
+    position: relative;
+    border: 1px solid #667789;
+    border-radius: 2px;
+    background: repeating-linear-gradient(90deg, #4f6077 0 1px, #e9eff5 1px 2px) 3px 2px / 8px 3px no-repeat, linear-gradient(#f4f6fa, #9aa8b7);
+    box-shadow: inset 0 1px #fff, 0 1px 2px #182c4d48;
+  }
+  #cfs-aqua-preview .aqua-rack i::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    right: 3px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #419030;
+    box-shadow: inset 0 1px #baf098;
+  }
+  #cfs-aqua-preview .aqua-button, #cfs-aqua-preview .aqua-range {
+    min-height: 33px;
+    border: 1px solid #8192a6;
+    border-radius: 8px;
+    padding: 4px 11px;
+    background: linear-gradient(#fcfdff, #dde6ee 49%, #c7d4e0 51%, #e8eef4);
+    box-shadow: inset 0 1px #fff, 0 1px 2px #23355938;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  #cfs-aqua-preview .aqua-admin { opacity: .65; }
+  #cfs-aqua-preview .aqua-layout {
+    display: grid;
+    grid-template-columns: 158px minmax(0, 1fr);
+    border: 1px solid #8295ac;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 1px #fff, 0 1px 2px #34496e33;
+    background: linear-gradient(120deg, #f6f9fc, #e9f0f7);
+  }
+  #cfs-aqua-preview .aqua-sidebar {
+    padding: 16px 10px;
+    border-right: 1px solid #9badc0;
+    background: linear-gradient(110deg, #bbd4e7, #d7e4ee);
+    box-shadow: inset -1px 0 #ffffff78;
+  }
+  #cfs-aqua-preview .aqua-side-button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 100%;
+    min-height: 37px;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-bottom-color: #9eb2c5;
+    border-radius: 0;
+    background: transparent;
+    font-weight: 600;
+    white-space: nowrap;
+    text-shadow: 0 1px #fff9;
+  }
+  #cfs-aqua-preview .aqua-side-button[aria-pressed="true"] {
+    border-color: #0649a6;
+    border-radius: 8px;
+    color: #fff;
+    background: linear-gradient(#7ad8ff 0%, #2381e5 47%, #0657c2 51%, #1268d3 82%, #2e91e9);
+    box-shadow: inset 0 1px #e7faff, 0 2px 3px #24486a56;
+    text-shadow: 0 1px #123f78;
+  }
+  #cfs-aqua-preview .aqua-icon-stack { font-size: 17px; line-height: 1; }
+  #cfs-aqua-preview .aqua-region-list { display: grid; gap: 2px; margin-top: 15px; }
+  #cfs-aqua-preview .aqua-nav-label { color: var(--aqua-muted); font-size: 12px; padding: 3px 9px; }
+  #cfs-aqua-preview .aqua-main { min-width: 0; padding: 17px; }
+  #cfs-aqua-preview .aqua-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    margin-bottom: 13px;
+  }
+  #cfs-aqua-preview h1 { font-size: clamp(22px, 3vw, 29px); line-height: 1.22; font-weight: 750; letter-spacing: -.025em; }
+  #cfs-aqua-preview h2 { font-size: 16px; line-height: 1.35; font-weight: 700; }
+  #cfs-aqua-preview h3 { font-size: 13px; line-height: 1.35; font-weight: 700; }
+  #cfs-aqua-preview .aqua-search {
+    width: min(14em, 100%);
+    min-height: 32px;
+    padding: 4px 10px;
+    border: 1px solid #96a8bb;
+    border-radius: 7px;
+    background: #f5f8fb;
+    box-shadow: inset 0 1px 3px #33496832, 0 1px #fff;
+  }
+  #cfs-aqua-preview .aqua-ribbon {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #8091a5;
+    border-radius: 10px;
+    background: var(--aqua-metal);
+    box-shadow: inset 0 1px #fff, 0 2px 3px #243e6730;
+  }
+  #cfs-aqua-preview .aqua-ribbon > div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3px 8px;
+    min-width: 0;
+    padding: 7px 9px;
+    border: 1px solid #a0afbe;
+    border-radius: 6px;
+    background: linear-gradient(#f5f8fb, #dce7f0);
+    box-shadow: inset 0 1px 2px #39557917;
+  }
+  #cfs-aqua-preview .aqua-ribbon dt { color: var(--aqua-muted); font-size: 12px; white-space: nowrap; }
+  #cfs-aqua-preview .aqua-ribbon dd { font-size: 18px; font-weight: 750; }
+  #cfs-aqua-preview .aqua-lamp {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border: 1px solid #247a2e;
+    border-radius: 50%;
+    background: radial-gradient(circle at 39% 26%, #f4ffdf, #79d341 44%, #37a527 69%, #17641d);
+    box-shadow: 0 0 3px #378e4f55;
+    vertical-align: baseline;
+    flex: none;
+  }
+  #cfs-aqua-preview .aqua-lamp.is-blue { border-color: #1d5cbb; background: radial-gradient(circle at 37% 26%, #f1faff, #56c4ff 42%, #225bc7 85%); }
+  #cfs-aqua-preview .aqua-lamp.is-offline { border-color: #9c2533; background: radial-gradient(circle at 37% 26%, #fff2ef, #f96567 43%, #bb2333 80%); box-shadow: 0 0 3px #9b26384d; }
+  #cfs-aqua-preview .aqua-server-grid, #cfs-aqua-preview .aqua-field-panels {
+    display: grid;
+    gap: 12px;
+    align-items: stretch;
+  }
+  #cfs-aqua-preview .aqua-server-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 322px), 1fr)); }
+  #cfs-aqua-preview .aqua-field-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #cfs-aqua-preview .aqua-panel {
+    min-width: 0;
+    border: 1px solid #95a7bb;
+    border-radius: 10px;
+    background: linear-gradient(#fbfdff, #e5edf6);
+    box-shadow: inset 0 1px #fff, 0 2px 3px #20345626;
+  }
+  #cfs-aqua-preview .aqua-server { display: flex; flex-direction: column; gap: 8px; padding: 11px; container: aqua-server / inline-size; }
+  #cfs-aqua-preview .aqua-server-header {
+    display: grid;
+    gap: 4px;
+    border-bottom: 1px solid var(--aqua-line);
+    padding-bottom: 6px;
+  }
+  #cfs-aqua-preview :is(.aqua-server-title, .aqua-server-meta) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 8px;
+  }
+  #cfs-aqua-preview .aqua-server-meta { flex-wrap: wrap; }
+  #cfs-aqua-preview .aqua-server-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    font-size: 11px;
+  }
+  #cfs-aqua-preview :is(.aqua-ip-tag, .aqua-arch) {
+    border: 1px solid #9db0c1;
+    border-radius: 4px;
+    background: linear-gradient(#fff, #e4edf5);
+    padding: 0 4px;
+    color: var(--aqua-muted);
+    font-weight: 650;
+    white-space: nowrap;
+  }
+  #cfs-aqua-preview .aqua-ip-tag[data-reachable="true"] {
+    background: linear-gradient(#f4fff8, #d6efe4);
+    border-color: #8bae9d;
+    color: #1f5b48;
+  }
+  #cfs-aqua-preview .aqua-agent {
+    color: var(--aqua-muted);
+    margin-left: 2px;
+    white-space: nowrap;
+  }
+  #cfs-aqua-preview .aqua-arch { font-size: 11px; }
+  #cfs-aqua-preview .aqua-server-link {
+    display: inline-block;
+    padding: 1px 0;
+    border: 0;
+    background: none;
+    font-size: 19px;
+    line-height: 1.25;
+    font-weight: 750;
+  }
+  #cfs-aqua-preview .aqua-server-link::after { content: " ›"; color: var(--aqua-blue); }
+  #cfs-aqua-preview .aqua-server-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+  #cfs-aqua-preview .aqua-server-location, #cfs-aqua-preview .aqua-detail-subtitle { color: var(--aqua-muted); font-size: 12px; }
+  #cfs-aqua-preview .aqua-server-location { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; }
+  #cfs-aqua-preview .aqua-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px;
+    min-width: 4.5em;
+    border: 1px solid #a1b3c5;
+    border-radius: 12px;
+    background: linear-gradient(#fdfefe, #d9e6ef);
+    font-size: 12px;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+  #cfs-aqua-preview .aqua-server-usage { display: grid; gap: 2px; }
+  #cfs-aqua-preview .aqua-measure {
+    display: grid;
+    grid-template-columns: 4.1em minmax(9px, 1fr) 3.8em 9.4em;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #cfs-aqua-preview .aqua-measure b { text-align: right; font-weight: 650; }
+  #cfs-aqua-preview .aqua-measure-capacity { text-align: right; color: var(--aqua-muted); }
+  #cfs-aqua-preview .aqua-track {
+    height: 7px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #d7e0ea;
+    box-shadow: inset 0 1px 2px #42587062, 0 1px #fff;
+  }
+  #cfs-aqua-preview .aqua-track i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(#75d5ff, #187be6 58%, #0252bd 61%, #176fe0);
+    box-shadow: inset 0 1px #a5e8ff;
+  }
+  #cfs-aqua-preview :is(.aqua-server-network, .aqua-card-probes) {
+    display: grid;
+    padding: 2px 7px;
+    border: 1px solid #afbece;
+    border-radius: 6px;
+    background: #e4edf6;
+    box-shadow: inset 0 1px 2px #51638321;
+  }
+  #cfs-aqua-preview .aqua-server-connections {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 3px 8px;
+    min-height: 24px;
+    padding: 2px 0;
+    font-size: 12px;
+  }
+  #cfs-aqua-preview .aqua-server-connections > div { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+  #cfs-aqua-preview .aqua-server-connections dt { color: var(--aqua-muted); }
+  #cfs-aqua-preview .aqua-server-network :is(b, time) { font-weight: 650; }
+  #cfs-aqua-preview .aqua-transfer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px 5px;
+    align-items: baseline;
+    border-top: 1px solid #aebdcd8c;
+    padding: 4px 0 2px;
+    font-size: 12px;
+  }
+  #cfs-aqua-preview .aqua-transfer-direction {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 1px 5px;
+    min-width: 0;
+  }
+  #cfs-aqua-preview .aqua-transfer-direction + .aqua-transfer-direction { padding-left: 5px; border-left: 1px solid #aebdcd8c; }
+  #cfs-aqua-preview .aqua-transfer-direction > * { white-space: nowrap; }
+  #cfs-aqua-preview .aqua-transfer-direction dt { color: var(--aqua-blue); font-weight: 700; }
+  #cfs-aqua-preview .aqua-transfer-direction dd { flex: 1 0 auto; text-align: center; }
+  #cfs-aqua-preview .aqua-transfer-total {
+    border-left: 1px solid #aebdcd8c;
+    padding-left: 5px;
+    color: var(--aqua-muted);
+  }
+  #cfs-aqua-preview .aqua-transfer-total b { font-weight: 550; }
+  #cfs-aqua-preview .aqua-path-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  #cfs-aqua-preview .aqua-card-probes { gap: 0 5px; }
+  #cfs-aqua-preview .aqua-card-probes:has(.aqua-path-table + .aqua-path-table) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #cfs-aqua-preview .aqua-path-table { align-self: start; }
+  #cfs-aqua-preview .aqua-path-table + .aqua-path-table { border-left: 1px solid #aebdcd8c; }
+  #cfs-aqua-preview .aqua-path-table tr > * {
+    padding: 2px 5px;
+    text-align: right;
+    border-bottom: 1px solid #aebdcd69;
+    white-space: nowrap;
+  }
+  #cfs-aqua-preview .aqua-path-table thead th { color: var(--aqua-muted); font-weight: 500; font-size: 11px; }
+  #cfs-aqua-preview .aqua-path-table tr > :first-child {
+    width: 37%;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  #cfs-aqua-preview .aqua-path-table tbody th { font-weight: 650; }
+  #cfs-aqua-preview .aqua-path-table tbody tr:last-child > * { border-bottom: none; }
+  #cfs-aqua-preview .aqua-card-billing {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 3px 9px;
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px solid var(--aqua-line);
+    font-size: 12px;
+    color: var(--aqua-muted);
+  }
+  #cfs-aqua-preview .aqua-card-billing > span { white-space: nowrap; }
+  #cfs-aqua-preview .aqua-card-billing :is(b, time) { color: var(--aqua-ink); font-weight: 650; }
+  @container aqua-server (max-width: 345px) {
+    #cfs-aqua-preview .aqua-path-table { font-size: 11px; }
+    #cfs-aqua-preview .aqua-card-probes { padding-right: 1px; padding-left: 1px; column-gap: 2px; }
+    #cfs-aqua-preview .aqua-path-table tr > * { padding-right: 2px; padding-left: 2px; }
+    #cfs-aqua-preview .aqua-path-table thead tr > * { padding-right: 1px; padding-left: 1px; }
+    #cfs-aqua-preview .aqua-path-table tbody th { padding-right: 1px; padding-left: 1px; }
+    #cfs-aqua-preview .aqua-path-table tr > :first-child { width: 36%; }
+    #cfs-aqua-preview .aqua-path-table tr > :nth-child(2) { width: 35%; }
+  }
+  @container aqua-server (max-width: 295px) {
+    #cfs-aqua-preview :is(.aqua-transfer, .aqua-server-connections) { font-size: 11px; }
+    #cfs-aqua-preview .aqua-server-connections { column-gap: 5px; }
+    #cfs-aqua-preview .aqua-server-connections > div { gap: 2px; }
+    #cfs-aqua-preview .aqua-measure { grid-template-columns: 4em minmax(9px, 1fr) 3.4em 8.5em; gap: 4px; }
+    #cfs-aqua-preview .aqua-transfer { column-gap: 3px; }
+    #cfs-aqua-preview .aqua-transfer-direction { column-gap: 3px; }
+    #cfs-aqua-preview .aqua-transfer-total { padding-left: 3px; }
+  }
+  @container aqua-server (max-width: 242px) {
+    #cfs-aqua-preview .aqua-card-probes:has(.aqua-path-table + .aqua-path-table) { grid-template-columns: minmax(0, 1fr); }
+    #cfs-aqua-preview .aqua-path-table + .aqua-path-table { border-left: 0; border-top: 1px solid #aebdcd8c; }
+    #cfs-aqua-preview .aqua-measure { grid-template-columns: 4.1em minmax(6px, 1fr) 3.6em 8.6em; gap: 3px; font-size: 11px; }
+    #cfs-aqua-preview .aqua-server-network { padding-right: 3px; padding-left: 3px; }
+    #cfs-aqua-preview .aqua-transfer { grid-template-columns: fit-content(54%) minmax(0, 1fr); }
+    #cfs-aqua-preview .aqua-transfer-direction { column-gap: 2px; }
+    #cfs-aqua-preview .aqua-transfer-total { padding-left: 0; border-left: 0; }
+    #cfs-aqua-preview .aqua-transfer-direction + .aqua-transfer-direction { padding-left: 1px; }
+  }
+  @container aqua-server (max-width: 218px) {
+    #cfs-aqua-preview .aqua-path-table tr > * { white-space: normal; overflow-wrap: anywhere; }
+    #cfs-aqua-preview .aqua-measure {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, .65fr) minmax(0, 1.8fr);
+      position: relative;
+      padding-bottom: 4px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    #cfs-aqua-preview .aqua-measure .aqua-track { position: absolute; right: 0; bottom: 0; left: 0; height: 3px; }
+  }
+  @container aqua-server (max-width: 214px) {
+    #cfs-aqua-preview .aqua-transfer { grid-template-columns: minmax(0, 1fr); }
+    #cfs-aqua-preview .aqua-transfer-direction + .aqua-transfer-direction { padding-left: 0; border-left: 0; }
+  }
+  #cfs-aqua-preview .aqua-empty { padding: 20px 4px; color: var(--aqua-muted); }
+  #cfs-aqua-preview .aqua-detail-name { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  #cfs-aqua-preview .aqua-detail-subtitle { margin-top: 3px; }
+  #cfs-aqua-preview .aqua-detail-ribbon { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #cfs-aqua-preview .aqua-detail-ribbon dd { font-size: 16px; }
+  #cfs-aqua-preview .aqua-history { padding: 12px; margin-bottom: 12px; }
+  #cfs-aqua-preview .aqua-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-bottom: 8px;
+  }
+  #cfs-aqua-preview .aqua-range-label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  #cfs-aqua-preview .aqua-range {
+    border-color: #155bb7;
+    color: #fff;
+    background: linear-gradient(#4aacff, #1265ce 52%, #0652b8 53%, #217bd5);
+    box-shadow: inset 0 1px #bbe8ff;
+    text-shadow: 0 1px #0f4387;
+  }
+  #cfs-aqua-preview .aqua-range option { color: var(--aqua-ink); background: #f4f8fc; }
+  #cfs-aqua-preview .aqua-chart-legend { display: flex; justify-content: flex-end; gap: 13px; margin-bottom: 3px; font-size: 12px; }
+  #cfs-aqua-preview .aqua-chart-legend i { display: inline-block; width: 14px; height: 3px; margin-right: 4px; border-radius: 2px; background: var(--aqua-blue); vertical-align: middle; }
+  #cfs-aqua-preview .aqua-chart-legend .aqua-memory-key { background: var(--aqua-sea); }
+  #cfs-aqua-preview .aqua-chart {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 3px 6px;
+    font-size: 11px;
+    color: var(--aqua-muted);
+  }
+  #cfs-aqua-preview .aqua-y-axis { display: flex; flex-direction: column; justify-content: space-between; text-align: right; }
+  #cfs-aqua-preview .aqua-trend {
+    display: block;
+    width: 100%;
+    height: 132px;
+    border: 1px solid #bacbdc;
+    border-radius: 3px;
+    background: linear-gradient(transparent calc(50% - .5px), #bbcbdca0 50%, transparent calc(50% + .5px)), #f8fbfe;
+    box-shadow: inset 0 1px 3px #435d7a12;
+  }
+  #cfs-aqua-preview .aqua-x-axis { grid-column: 2; display: flex; justify-content: space-between; gap: 6px; }
+  #cfs-aqua-preview .aqua-section { padding: 11px; }
+  #cfs-aqua-preview .aqua-section > h2 { margin-bottom: 6px; }
+  #cfs-aqua-preview .aqua-wide { grid-column: 1 / -1; }
+  #cfs-aqua-preview .aqua-fields > div {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+    gap: 5px 9px;
+    align-items: baseline;
+    padding: 4px 0;
+    border-top: 1px solid #aebdcd80;
+    font-size: 12px;
+  }
+  #cfs-aqua-preview .aqua-fields dt { color: var(--aqua-muted); }
+  #cfs-aqua-preview .aqua-fields dd { text-align: right; overflow-wrap: anywhere; }
+  #cfs-aqua-preview .aqua-probes { display: grid; }
+  #cfs-aqua-preview .aqua-probe-row {
+    display: grid;
+    grid-template-columns: minmax(0, .7fr) minmax(0, 1.25fr) minmax(0, .65fr) minmax(0, .55fr);
+    gap: 4px 8px;
+    align-items: baseline;
+    padding: 4px 0;
+    border-top: 1px solid #aebdcd80;
+    font-size: 12px;
+  }
+  #cfs-aqua-preview .aqua-probe-row > :first-child { font-weight: 650; }
+  #cfs-aqua-preview .aqua-probe-row > :nth-last-child(-n+2) { text-align: right; }
+  #cfs-aqua-preview .aqua-probe-row > * { overflow-wrap: anywhere; }
+  #cfs-aqua-preview .aqua-probe-labels { color: var(--aqua-muted); }
+  #cfs-aqua-preview .aqua-timeout { color: #a03228; font-weight: 650; }
+  #cfs-aqua-preview .aqua-sample-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 9px; }
+  #cfs-aqua-preview .aqua-sample {
+    min-width: 0;
+    padding: 6px 8px;
+    border-radius: 5px;
+    background: #dce7f3;
+  }
+  #cfs-aqua-preview .aqua-sample h3 { margin-bottom: 5px; }
+  #cfs-aqua-preview .aqua-gpu + .aqua-gpu, #cfs-aqua-preview .aqua-report + .aqua-report { margin-top: 8px; }
+  #cfs-aqua-preview .aqua-footer {
+    padding: 4px 10px 2px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 650;
+    text-shadow: 0 1px #fff;
+  }
+  #cfs-aqua-preview .aqua-footer a { color: var(--aqua-ink); text-decoration: none; }
+  #cfs-aqua-preview .aqua-footer a:hover { text-decoration: underline; }
+  @container aqua-preview (max-width: 869px) {
+    #cfs-aqua-preview .aqua-main { padding: 12px; }
+    #cfs-aqua-preview .aqua-layout { grid-template-columns: minmax(0, 1fr); }
+    #cfs-aqua-preview .aqua-sidebar { display: flex; flex-wrap: wrap; gap: 4px; padding: 5px; border-right: 0; border-bottom: 1px solid #9badc0; }
+    #cfs-aqua-preview .aqua-region-list { display: contents; }
+    #cfs-aqua-preview .aqua-nav-label { display: none; }
+    #cfs-aqua-preview .aqua-side-button { width: auto; min-height: 31px; border-bottom-color: transparent; padding: 4px 7px; }
+  }
+  @container aqua-preview (max-width: 610px) {
+    #cfs-aqua-preview .aqua-field-panels { grid-template-columns: minmax(0, 1fr); }
+    #cfs-aqua-preview .aqua-main { padding: 9px; }
+  }
+  @container aqua-preview (max-width: 400px) {
+    #cfs-aqua-preview .aqua-detail-ribbon, #cfs-aqua-preview .aqua-sample-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #cfs-aqua-preview .aqua-toolbar { padding: 6px 8px; gap: 6px; }
+    #cfs-aqua-preview .aqua-ribbon > div { padding: 4px 5px; }
+  }
+  @container aqua-preview (max-width: 300px) {
+    #cfs-aqua-preview .aqua-main { padding: 4px; }
+    #cfs-aqua-preview .aqua-server { padding: 6px; }
+  }
+  @container aqua-preview (max-width: 260px) {
+    #cfs-aqua-preview .aqua-brand { gap: 6px; font-size: 16px; }
+    #cfs-aqua-preview .aqua-rack { width: 25px; }
+    #cfs-aqua-preview .aqua-footer { overflow-wrap: anywhere; }
+  }
+  @media (pointer: coarse) {
+    #cfs-aqua-preview :is(.aqua-button, .aqua-search, .aqua-range, .aqua-side-button, .aqua-server-link) { min-height: 44px; }
+  }
+</style>
+
+<script>
+  (() => {
+    const root = document.getElementById('cfs-aqua-preview');
+    const overview = root.querySelector('#aqua-overview');
+    const detail = root.querySelector('#aqua-detail');
+    const serverGrid = root.querySelector('.aqua-server-grid');
+    const fields = root.querySelector('.aqua-field-panels');
+    const search = root.querySelector('.aqua-search');
+    const range = root.querySelector('.aqua-range');
+    const trend = root.querySelector('.aqua-trend');
+    const cardTemplate = root.querySelector('#aqua-server-card');
+    const numeric = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
+    const clock = new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    });
+    const dateTime = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Asia/Singapore', dateStyle: 'short', timeStyle: 'medium'
+    });
+    const snapshot = Date.parse('2026-11-27T14:30:00+08:00');
+    const KiB = 1024;
+    const MiB = KiB ** 2;
+    const GiB = KiB ** 3;
+    const byteUnits = [[KiB ** 4, 'TiB'], [GiB, 'GiB'], [MiB, 'MiB'], [KiB, 'KiB'], [1, 'B']];
+    const dash = '—';
+    const regions = { SG: '新加坡', JP: '东京', DE: '法兰克福', US: '洛杉矶' };
+    const trafficModes = { total: '双向合计', dl: '仅计下行', ul: '仅计上行', max: '取双向较大值' };
+    const billingCycles = { month: '月', quarter: '季', half_year: '半年', year: '年', two_years: '2年', three_years: '3年', four_years: '4年', five_years: '5年' };
+    const siteConfig = {
+      custom_ct_name: '电信', custom_cu_name: '联通', custom_cm_name: '移动', custom_bd_name: 'BGP',
+      theme_options: { three_net_panel_count: 8 }
+    };
+    const displayConfig = { show_three_net_details: true, show_expire: true, show_price: true };
+    const palette = getComputedStyle(root);
+    const blue = palette.getPropertyValue('--aqua-blue').trim();
+    const sea = palette.getPropertyValue('--aqua-sea').trim();
+    const probes = [
+      ['ct', 'custom_ct', 'custom_ct_name', '电信'],
+      ['cu', 'custom_cu', 'custom_cu_name', '联通'],
+      ['cm', 'custom_cm', 'custom_cm_name', '移动'],
+      ['bd', 'custom_bd', 'custom_bd_name', 'BGP'],
+      ['node_1', 'node_1', 'node_1_name', 'Node 1'],
+      ['node_2', 'node_2', 'node_2_name', 'Node 2'],
+      ['node_3', 'node_3', 'node_3_name', 'Node 3'],
+      ['node_4', 'node_4', 'node_4_name', 'Node 4']
+    ];
+
+    const serverDefaults = {
+      price: '39.00', currency: '¥', billing_cycle: 'month', auto_renewal: '1',
+      expire_date: '2027-01-12', traffic_limit: '1024', traffic_calc_type: 'total',
+      traffic_alert_percent: 80, traffic_alert_state: null, reset_day: 1,
+      rx_correction: 0, tx_correction: 0, offline_notify_disabled: '0',
+      tags: 'prod,edge', is_hidden: '0', interface: 'eth0',
+      collect_interval: 2, report_interval: 60, wss_report_interval: 2, connection_mode: 'auto', ping_mode: 'tcp',
+      timestamp: Date.parse('2026-06-02T10:45:00+08:00'),
+      boot_time: String(Date.parse('2026-11-18T09:22:08+08:00')),
+      arch: 'x86_64', cpu_info: 'AMD EPYC 7B13', cpu_cores: 4, load_avg: '0.32 0.41 0.39',
+      os: 'Ubuntu 24.04 LTS', kernel_version: '6.8.0-52-generic', agent_version: '1.3.4',
+      ip_v4: '1', ip_v6: '1', ram_total: 8192, swap_total: 2048, swap_used: 128, disk_total: 102400,
+      disk: { read_bps: 320 * KiB, write_bps: 689 * KiB, read_iops: 18, write_iops: 27, await_ms: 1.7, util: 3.4 },
+      gpu_info: JSON.stringify([{ id: '0', name: 'NVIDIA RTX A4000', info: 12.5 }]),
+      processes: 124, last_updated: snapshot, sysConfig: { long_history_points: 120 },
+      custom_ct: 'ct.example.net', custom_cu: 'cu.example.net',
+      custom_cm: 'cm.example.net', custom_bd: 'bgp.example.net',
+      node_1: 'edge-sg.example.net', node_2: 'edge-jp.example.net',
+      node_3: 'edge-hk.example.net', node_4: 'edge-us.example.net',
+      ping_ct: 32, ping_cu: 41, ping_cm: null, ping_bd: 28,
+      ping_node_1: 18, ping_node_2: 44, ping_node_3: 0, ping_node_4: 168,
+      loss_ct: 0, loss_cu: 0, loss_cm: 100, loss_bd: 0,
+      loss_node_1: 0, loss_node_2: 2, loss_node_3: 0, loss_node_4: 1
+    };
+
+    const servers = [
+      {
+        id: 'a32c58b0-d782-4d71-9dc0-1497fae26a01', name: 'SG-01', region: 'SG', server_group: '亚太',
+        sort_order: 0, history_partition_id: 31, cpu: 18, ram_used: 3441, disk_used: 28672,
+        tcp_conn: 256, udp_conn: 18, net_in_speed: 1.2 * MiB, net_out_speed: 320 * KiB,
+        net_rx: 380 * GiB, net_tx: 94 * GiB, net_rx_monthly: 128 * GiB, net_tx_monthly: 34 * GiB
+      },
+      {
+        id: 'a32c58b0-d782-4d71-9dc0-1497fae26a02', name: 'JP-01', region: 'JP', server_group: '亚太',
+        sort_order: 1, history_partition_id: 32, os: 'Debian 13', kernel_version: '6.12.13-arm64',
+        arch: 'aarch64', cpu_info: 'Ampere Altra', boot_time: String(Date.parse('2026-11-23T06:10:12+08:00')),
+        cpu: 20, ram_used: 3932, swap_total: 0, swap_used: 0, disk_used: 36864, disk: undefined, gpu_info: '[]',
+        tcp_conn: 138, udp_conn: 0, processes: 91, ip_v6: '0', agent_version: '1.3.3', traffic_limit: '',
+        expire_date: '2027-02-01', price: '', auto_renewal: '0',
+        net_in_speed: 720 * KiB, net_out_speed: 2.1 * MiB,
+        net_rx: 216 * GiB, net_tx: 312 * GiB, net_rx_monthly: 42 * GiB, net_tx_monthly: 94 * GiB,
+        ping_ct: 47, ping_cu: 50, ping_cm: 39, loss_cm: 0,
+        custom_bd: '', ping_bd: false, loss_bd: false,
+        node_1: '', ping_node_1: false, loss_node_1: false,
+        node_2: '', ping_node_2: false, loss_node_2: false,
+        node_3: '', ping_node_3: false, loss_node_3: false,
+        node_4: '', ping_node_4: false, loss_node_4: false
+      },
+      {
+        id: 'a32c58b0-d782-4d71-9dc0-1497fae26a03', name: 'DE-01', region: 'DE', server_group: '欧洲',
+        sort_order: 2, history_partition_id: 33, os: 'Alpine 3.22', kernel_version: '6.12.31-0-lts',
+        cpu: 16, ram_used: 3195, swap_used: 0, disk_used: 27648, gpu_info: '[]',
+        tcp_conn: 92, udp_conn: 7, processes: 76, traffic_limit: '100', traffic_calc_type: 'ul',
+        expire_date: '2027-01-04', price: '9.80', currency: '€', billing_cycle: 'quarter',
+        net_in_speed: 448 * KiB, net_out_speed: 96 * KiB,
+        net_rx: 74 * GiB, net_tx: 31 * GiB, net_rx_monthly: 18 * GiB, net_tx_monthly: 8 * GiB,
+        ping_ct: 192, ping_cu: 181, ping_cm: 207, loss_cm: 1,
+        node_2: '', ping_node_2: false, loss_node_2: false,
+        node_3: '', ping_node_3: false, loss_node_3: false,
+        node_4: '', ping_node_4: false, loss_node_4: false
+      },
+      {
+        id: 'a32c58b0-d782-4d71-9dc0-1497fae26a04', name: 'US-01', region: 'US', server_group: '北美',
+        sort_order: 3, history_partition_id: 34, os: 'Debian 13', kernel_version: '6.12.13-amd64',
+        cpu: 7, ram_used: 2840, disk_used: 30720, disk: undefined, gpu_info: '[]',
+        tcp_conn: 23, udp_conn: 0, net_in_speed: 64 * KiB, net_out_speed: 43 * KiB,
+        net_rx: 98 * GiB, net_tx: 56 * GiB, net_rx_monthly: 12 * GiB, net_tx_monthly: 17 * GiB,
+        ping_ct: 176, last_updated: snapshot - 18 * 60_000, ip_v6: '0', price: '0', traffic_limit: '0',
+        expire_date: '', auto_renewal: '0'
+      }
+    ].map((overrides) => ({ ...serverDefaults, ...overrides }));
+
+    let zone = '';
+    let activeServer = null;
+    let plottedHistory = [];
+
+    function element(tag, className, content) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (content !== undefined) node.textContent = content;
+      return node;
+    }
+
+    function isOnline(server) {
+      return snapshot - server.last_updated < 5 * 60_000;
+    }
+
+    function valueWithUnit(value, unit = '') {
+      if (value === null || value === undefined || value === '') return dash;
+      return (typeof value === 'number' ? numeric.format(value) : value) + unit;
+    }
+
+    function bytes(value, unitSuffix = '') {
+      if (!Number.isFinite(value)) return dash;
+      const [divisor, unit] = byteUnits.find(([threshold]) => value >= threshold) || byteUnits.at(-1);
+      return valueWithUnit(value / divisor, ' ' + unit + unitSuffix);
+    }
+
+    function time(value) {
+      return value ? dateTime.format(Number(value)) : dash;
+    }
+
+    function bootTimestamp(value) {
+      const raw = String(value ?? '').trim();
+      if (!raw) return null;
+      const epoch = Number(raw);
+      const milliseconds = Number.isFinite(epoch)
+        ? epoch * (epoch < 1e12 ? 1000 : 1)
+        : Date.parse(raw);
+      return milliseconds > 0 && Number.isFinite(new Date(milliseconds).getTime()) ? milliseconds : null;
+    }
+
+    function percentOf(used, total) {
+      return Number.isFinite(used) && Number.isFinite(total) && total > 0 ? used / total * 100 : null;
+    }
+
+    function formatPercent(percent) {
+      return Number.isFinite(percent) ? valueWithUnit(Math.round(percent * 10) / 10, '%') : dash;
+    }
+
+    function capacityMetric(key, label, used, total) {
+      return {
+        key, label, percent: percentOf(used, total),
+        used: Number.isFinite(used) ? used * MiB : null,
+        total: Number.isFinite(total) ? total * MiB : null
+      };
+    }
+
+    function usage(server) {
+      const metrics = [
+        { key: 'cpu', label: 'CPU', percent: server.cpu, total: server.cpu_cores },
+        capacityMetric('memory', '内存', server.ram_used, server.ram_total)
+      ];
+      if (Number.isFinite(server.swap_total) && server.swap_total > 0 && Number.isFinite(server.swap_used) && server.swap_used >= 0) {
+        metrics.push(capacityMetric('swap', '虚拟内存', server.swap_used, server.swap_total));
+      }
+      metrics.push(capacityMetric('disk', '磁盘', server.disk_used, server.disk_total));
+      return metrics;
+    }
+
+    function trafficQuotaBytes(server) {
+      const quotaBytes = Number.parseFloat(server.traffic_limit) * GiB;
+      return Number.isFinite(quotaBytes) && quotaBytes > 0 ? quotaBytes : null;
+    }
+
+    function trafficUsage(server) {
+      const total = trafficQuotaBytes(server);
+      if (total === null) return null;
+
+      const rx = Number.parseFloat(server.net_rx_monthly) || 0;
+      const tx = Number.parseFloat(server.net_tx_monthly) || 0;
+      const usageByType = { total: rx + tx, dl: rx, ul: tx, max: Math.max(rx, tx) };
+      const mode = Object.hasOwn(usageByType, server.traffic_calc_type) ? server.traffic_calc_type : 'total';
+      const used = usageByType[mode];
+      return { key: 'traffic', label: '流量', used, total, percent: percentOf(used, total) };
+    }
+
+    function usageCapacity(metric, available) {
+      const { key, used, total } = metric;
+      const current = available && Number.isFinite(used) ? used : null;
+      if (!Number.isFinite(total) || total <= 0) return dash;
+      if (key === 'cpu') return valueWithUnit(total, ' 核');
+
+      const [divisor, unit] = byteUnits.find(([threshold]) => total >= threshold) || byteUnits.at(-1);
+      if (current !== null && current > 0 && current < divisor) {
+        return bytes(current) + ' / ' + bytes(total);
+      }
+      return valueWithUnit(current === null ? null : current / divisor) + ' / ' + valueWithUnit(total / divisor, ' ' + unit);
+    }
+
+    function drawSeries(canvas, series, maximum) {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      if (!width || !height) return;
+      const scale = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      const context = canvas.getContext('2d');
+      context.scale(scale, scale);
+      context.lineWidth = 1.8;
+      context.lineJoin = 'round';
+      for (const [points, color] of series) {
+        const x = (index) => 1 + (width - 2) * index / Math.max(1, points.length - 1);
+        const y = (point) => height - 2 - (height - 4) * Math.max(0, Math.min(point / maximum, 1));
+        context.beginPath();
+        let penDown = false;
+        for (const [index, point] of points.entries()) {
+          if (!Number.isFinite(point)) {
+            penDown = false;
+            continue;
+          }
+          if (penDown) context.lineTo(x(index), y(point));
+          else context.moveTo(x(index), y(point));
+          penDown = true;
+        }
+        context.strokeStyle = color;
+        context.stroke();
+      }
+    }
+
+    const historyResize = new ResizeObserver(() => drawSeries(trend, plottedHistory, 100));
+    historyResize.observe(trend);
+
+    function showStatus(target, server) {
+      const online = isOnline(server);
+      const lamp = element('span', online ? 'aqua-lamp' : 'aqua-lamp is-offline');
+      lamp.setAttribute('aria-hidden', 'true');
+      target.replaceChildren(lamp, online ? '在线' : '离线');
+    }
+
+    function probeReading(value, unit) {
+      if (value === null) return '超时';
+      return Number.isFinite(value) ? valueWithUnit(value, unit) : '';
+    }
+
+    function buildCardPathTable(readings) {
+      const table = element('table', 'aqua-path-table');
+      const heading = table.createTHead().insertRow();
+      for (const label of ['线路', '延时', '丢包率']) {
+        const cell = element('th', '', label);
+        cell.scope = 'col';
+        heading.append(cell);
+      }
+      const body = table.createTBody();
+      for (const { suffix, name, ping, loss, pingLabel, lossLabel } of readings) {
+        const row = body.insertRow();
+        row.dataset.probe = suffix;
+        const label = element('th', '', name);
+        label.scope = 'row';
+        label.dataset.tooltip = name;
+        row.append(label);
+        row.append(
+          element('td', ping === null ? 'aqua-timeout' : '', pingLabel),
+          element('td', loss === null ? 'aqua-timeout' : '', lossLabel)
+        );
+      }
+      return table;
+    }
+
+    function showCardProbes(target, server) {
+      if (displayConfig.show_three_net_details !== true) return;
+      const option = Number(siteConfig.theme_options.three_net_panel_count);
+      const count = Number.isInteger(option) && option >= 0 && option <= probes.length ? option : 3;
+      if (!count) return;
+
+      const readings = [];
+      for (const [suffix, , nameKey, fallback] of probes) {
+        const ping = server['ping_' + suffix];
+        const loss = server['loss_' + suffix];
+        const pingLabel = probeReading(ping, ' ms');
+        const lossLabel = probeReading(loss, '%');
+        if (!pingLabel && !lossLabel) continue;
+        readings.push({ suffix, name: siteConfig[nameKey] || fallback, ping, loss, pingLabel, lossLabel });
+        if (readings.length === count) break;
+      }
+      if (!readings.length) return;
+
+      const leftCount = readings.length > 3 ? Math.ceil(readings.length / 2) : readings.length;
+      target.append(buildCardPathTable(readings.slice(0, leftCount)));
+      if (leftCount < readings.length) target.append(buildCardPathTable(readings.slice(leftCount)));
+      target.hidden = false;
+    }
+
+    function expiryDate(value) {
+      const raw = String(value ?? '').trim();
+      const dateOnly = raw.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+      if (dateOnly) return dateOnly;
+      const parsed = Date.parse(raw);
+      return Number.isFinite(parsed) ? dateTime.format(parsed).slice(0, 10) : '';
+    }
+
+    function billingPrice(server) {
+      const raw = String(server.price ?? '').trim();
+      if (!raw) return '';
+      const amount = Number(raw);
+      if (amount === 0 || amount === -1) return '免费';
+      if (!Number.isFinite(amount) || amount < 0) return '';
+      const cycle = billingCycles[server.billing_cycle] ?? billingCycles.month;
+      return (server.currency || '¥') + valueWithUnit(amount) + ' / ' + cycle;
+    }
+
+    function showCardBilling(target, server) {
+      const expiry = displayConfig.show_expire === true ? expiryDate(server.expire_date) : '';
+      const price = displayConfig.show_price === true ? billingPrice(server) : '';
+      const renewal = expiry && ['0', '1'].includes(server.auto_renewal);
+      const expiryEntry = target.querySelector('[data-billing=expiry]');
+      const priceEntry = target.querySelector('[data-billing=price]');
+      const renewalEntry = target.querySelector('[data-billing=renewal]');
+
+      expiryEntry.hidden = !expiry;
+      const date = expiryEntry.querySelector('time');
+      date.dateTime = expiry;
+      date.textContent = expiry;
+      priceEntry.hidden = !price;
+      priceEntry.querySelector('b').textContent = price;
+      renewalEntry.hidden = !renewal;
+      renewalEntry.textContent = server.auto_renewal === '1' ? '自动续费开启' : '自动续费关闭';
+      target.hidden = !expiry && !price;
+    }
+
+    function renderCard(server) {
+      const card = cardTemplate.content.cloneNode(true);
+      const online = isOnline(server);
+      const link = card.querySelector('.aqua-server-link');
+      link.textContent = server.name;
+      link.dataset.server = server.id;
+      link.setAttribute('aria-label', '查看 ' + server.name + ' 详情');
+      card.querySelector('.aqua-server-location-label').textContent = server.os + ' · ' + regions[server.region];
+      const arch = card.querySelector('.aqua-arch');
+      arch.textContent = String(server.arch ?? '').trim();
+      arch.hidden = !arch.textContent;
+      showStatus(card.querySelector('.aqua-status'), server);
+
+      for (const tag of card.querySelectorAll('[data-ip]')) {
+        const version = tag.dataset.ip;
+        const reachable = String(server['ip_v' + version] ?? '').trim() === '1';
+        tag.dataset.reachable = String(reachable);
+        tag.textContent = 'IPv' + version + (reachable ? ' ✓' : ' ×');
+        tag.setAttribute('aria-label', 'IPv' + version + (reachable ? ' 可用' : ' 不可用'));
+      }
+      const agent = card.querySelector('.aqua-agent');
+      agent.hidden = !server.agent_version;
+      agent.textContent = '探针 ' + (server.agent_version || '');
+
+      const metrics = usage(server);
+      const traffic = trafficUsage(server);
+      if (traffic) metrics.push(traffic);
+      const usageRows = card.querySelector('.aqua-server-usage');
+      for (const metric of metrics) {
+        const available = online || metric.key === 'traffic';
+        const percent = available ? metric.percent : null;
+        const row = element('div', 'aqua-measure');
+        row.dataset.metric = metric.key;
+        const track = element('span', 'aqua-track');
+        const bar = element('i');
+        track.setAttribute('aria-hidden', 'true');
+        bar.style.width = (Number.isFinite(percent) ? Math.max(0, Math.min(percent, 100)) : 0) + '%';
+        track.append(bar);
+        const label = element('span', '', metric.label);
+        const capacity = element('span', 'aqua-measure-capacity', usageCapacity(metric, available));
+        if (metric.key === 'traffic') label.dataset.tooltip = '按本期流量计费口径统计';
+        row.append(label, track, element('b', '', formatPercent(percent)), capacity);
+        usageRows.append(row);
+      }
+
+      const readings = {
+        processes: online ? valueWithUnit(server.processes) : dash,
+        tcp: online ? valueWithUnit(server.tcp_conn) : dash,
+        udp: online ? valueWithUnit(server.udp_conn) : dash,
+        out: online ? bytes(server.net_out_speed, '/s') : dash,
+        tx: bytes(server.net_tx),
+        in: online ? bytes(server.net_in_speed, '/s') : dash,
+        rx: bytes(server.net_rx)
+      };
+      for (const [key, value] of Object.entries(readings)) {
+        card.querySelector('[data-value="' + key + '"]').textContent = value;
+      }
+
+      const boot = bootTimestamp(server.boot_time);
+      const bootReading = card.querySelector('[data-value=boot]');
+      bootReading.textContent = dash;
+      if (boot !== null) {
+        const fullTime = time(boot);
+        bootReading.textContent = fullTime.slice(5, 16);
+        bootReading.dateTime = new Date(boot).toISOString();
+        bootReading.dataset.tooltip = fullTime;
+      }
+
+      showCardProbes(card.querySelector('.aqua-card-probes'), server);
+      showCardBilling(card.querySelector('.aqua-card-billing'), server);
+      return card;
+    }
+
+    function renderOverview() {
+      const query = search.value.toLowerCase().trim();
+      const visible = servers.filter((server) => {
+        return (!zone || server.region === zone) &&
+          [server.name, server.os, regions[server.region], server.tags].some((value) => value.toLowerCase().includes(query));
+      });
+      serverGrid.replaceChildren(...visible.map(renderCard));
+      root.querySelector('.aqua-empty').hidden = visible.length > 0;
+    }
+
+    function panel(title, wide = false) {
+      const section = element('section', 'aqua-panel aqua-section' + (wide ? ' aqua-wide' : ''));
+      section.append(element('h2', '', title));
+      return section;
+    }
+
+    function fieldList(rows) {
+      const list = element('dl', 'aqua-fields');
+      for (const [key, label, value] of rows) {
+        const row = element('div');
+        row.dataset.field = key;
+        row.append(element('dt', '', label), element('dd', '', valueWithUnit(value)));
+        list.append(row);
+      }
+      return list;
+    }
+
+    function buildProbePanel(server) {
+      const section = panel('延时与丢包', true);
+      const table = element('div', 'aqua-probes');
+      table.setAttribute('role', 'table');
+      table.setAttribute('aria-label', '线路延时与丢包');
+      const labels = element('div', 'aqua-probe-row aqua-probe-labels');
+      labels.setAttribute('role', 'row');
+      for (const label of ['线路', '探测目标', '延时', '丢包']) {
+        const cell = element('span', '', label);
+        cell.setAttribute('role', 'columnheader');
+        labels.append(cell);
+      }
+      table.append(labels);
+      for (const [suffix, target, nameKey, fallback] of probes) {
+        const ping = server['ping_' + suffix];
+        const loss = server['loss_' + suffix];
+        const pingLabel = probeReading(ping, ' ms');
+        const lossLabel = probeReading(loss, '%');
+        if (!server[target] && !pingLabel && !lossLabel) continue;
+        const row = element('div', 'aqua-probe-row');
+        row.setAttribute('role', 'row');
+        const cells = [
+          element('span', '', siteConfig[nameKey] || fallback),
+          element('span', '', valueWithUnit(server[target])),
+          element('span', ping === null ? 'aqua-timeout' : '', pingLabel || dash),
+          element('span', loss === null ? 'aqua-timeout' : '', lossLabel || dash)
+        ];
+        cells[1].dataset.field = target;
+        cells[2].dataset.field = 'ping_' + suffix;
+        cells[3].dataset.field = 'loss_' + suffix;
+        for (const cell of cells) cell.setAttribute('role', 'cell');
+        row.append(...cells);
+        table.append(row);
+      }
+      section.append(table);
+      return section;
+    }
+
+    function latestReport(server) {
+      if (!isOnline(server)) return [];
+      return [{
+        serverId: server.id,
+        reportTs: server.last_updated,
+        reportAgeMs: 0,
+        samples: [2, 0].map((seconds) => ({
+          ts: server.last_updated - seconds * 1000,
+          data: {
+            cpu: server.cpu - seconds,
+            ram_total: server.ram_total,
+            ram_used: server.ram_used - seconds * 4,
+            swap_total: server.swap_total,
+            swap_used: server.swap_used,
+            net_in_speed: server.net_in_speed,
+            net_out_speed: server.net_out_speed
+          }
+        }))
+      }];
+    }
+
+    function buildReportPanel(server) {
+      const section = panel('最近上报样本', true);
+      section.dataset.field = 'latestReportUpdates';
+      const updates = latestReport(server);
+      if (!updates.length) section.append(element('p', 'aqua-detail-subtitle', '暂无回放样本'));
+      for (const update of updates) {
+        const report = element('div', 'aqua-report');
+        report.append(fieldList([
+          ['latestReportUpdates.serverId', '服务器 ID', update.serverId],
+          ['latestReportUpdates.reportTs', '批次时间', time(update.reportTs)],
+          ['latestReportUpdates.reportAgeMs', '快照时已过去', valueWithUnit(update.reportAgeMs, ' ms')]
+        ]));
+        const samples = element('div', 'aqua-sample-grid');
+        samples.dataset.field = 'latestReportUpdates.samples';
+        for (const { ts, data } of update.samples) {
+          const sample = element('section', 'aqua-sample');
+          const title = element('h3', '', dateTime.format(ts).slice(-8));
+          title.dataset.field = 'latestReportUpdates.samples.ts';
+          const sampleData = fieldList([
+            ['cpu', 'CPU', valueWithUnit(data.cpu, '%')],
+            ['ram_total', '内存总量', valueWithUnit(data.ram_total, ' MB')],
+            ['ram_used', '内存已用', valueWithUnit(data.ram_used, ' MB')],
+            ['swap_total', 'Swap 总量', valueWithUnit(data.swap_total, ' MB')],
+            ['swap_used', 'Swap 已用', valueWithUnit(data.swap_used, ' MB')],
+            ['net_in_speed', '下行网速', bytes(data.net_in_speed, '/s')],
+            ['net_out_speed', '上行网速', bytes(data.net_out_speed, '/s')]
+          ]);
+          sampleData.dataset.field = 'latestReportUpdates.samples.data';
+          sample.append(title, sampleData);
+          samples.append(sample);
+        }
+        report.append(samples);
+        section.append(report);
+      }
+      return section;
+    }
+
+    function renderFields(server) {
+      fields.replaceChildren(buildProbePanel(server));
+      const groups = [
+        ['节点与系统', [
+          ['id', '服务器 ID', server.id],
+          ['name', '名称', server.name],
+          ['server_group', '分组', server.server_group],
+          ['region', '区域', regions[server.region] + ' · ' + server.region],
+          ['tags', '标签', server.tags.split(',').join(' · ')],
+          ['os', '操作系统', server.os],
+          ['arch', '架构', server.arch],
+          ['kernel_version', '内核版本', server.kernel_version],
+          ['boot_time', '开机时间', time(bootTimestamp(server.boot_time))],
+          ['ip_v4', 'IPv4', server.ip_v4 === '1' ? '可用' : '不可用'],
+          ['ip_v6', 'IPv6', server.ip_v6 === '1' ? '可用' : '不可用'],
+          ['is_hidden', '可见性', server.is_hidden === '1' ? '隐藏' : '公开'],
+          ['sort_order', '显示顺序', server.sort_order]
+        ]],
+        ['资源与进程', [
+          ['cpu', 'CPU 使用率', valueWithUnit(server.cpu, '%')],
+          ['cpu_cores', 'CPU 核数', server.cpu_cores],
+          ['cpu_info', 'CPU 型号', server.cpu_info],
+          ['load_avg', '平均负载（1／5／15 分钟）', server.load_avg],
+          ['ram_used', '内存已用', valueWithUnit(server.ram_used, ' MB')],
+          ['ram_total', '内存总量', valueWithUnit(server.ram_total, ' MB')],
+          ['swap_used', 'Swap 已用', valueWithUnit(server.swap_used, ' MB')],
+          ['swap_total', 'Swap 总量', valueWithUnit(server.swap_total, ' MB')],
+          ['disk_used', '磁盘已用', valueWithUnit(server.disk_used, ' MB')],
+          ['disk_total', '磁盘总量', valueWithUnit(server.disk_total, ' MB')],
+          ['processes', '进程数', server.processes],
+          ['tcp_conn', 'TCP 连接数', server.tcp_conn],
+          ['udp_conn', 'UDP 连接数', server.udp_conn]
+        ]],
+        ['网络与流量', [
+          ['interface', '网卡', server.interface],
+          ['net_in_speed', '下行网速', bytes(server.net_in_speed, '/s')],
+          ['net_out_speed', '上行网速', bytes(server.net_out_speed, '/s')],
+          ['net_rx', '累计接收', bytes(server.net_rx)],
+          ['net_tx', '累计发送', bytes(server.net_tx)],
+          ['net_rx_monthly', '本期接收', bytes(server.net_rx_monthly)],
+          ['net_tx_monthly', '本期发送', bytes(server.net_tx_monthly)],
+          ['rx_correction', '接收修正值', bytes(server.rx_correction)],
+          ['tx_correction', '发送修正值', bytes(server.tx_correction)]
+        ]],
+        ['账单与流量策略', [
+          ['price', '价格', ['0', '-1'].includes(server.price) ? '免费' : server.price || '未设置'],
+          ['currency', '币种符号', server.currency],
+          ['billing_cycle', '计费周期', server.billing_cycle === 'month' ? '每月' : server.billing_cycle],
+          ['auto_renewal', '自动续费', server.auto_renewal === '1' ? '是' : '否'],
+          ['expire_date', '到期日期', server.expire_date],
+          ['traffic_limit', '流量额度', bytes(trafficQuotaBytes(server))],
+          ['traffic_calc_type', '流量计费口径', trafficModes[server.traffic_calc_type] ?? server.traffic_calc_type],
+          ['reset_day', '流量重置日', '每月 ' + server.reset_day + ' 日'],
+          ['traffic_alert_percent', '流量告警阈值', valueWithUnit(server.traffic_alert_percent, '%')],
+          ['traffic_alert_state', '流量告警状态', server.traffic_alert_state || '暂无'],
+          ['offline_notify_disabled', '离线通知', server.offline_notify_disabled === '1' ? '停用' : '启用']
+        ]],
+        ['探针与上报', [
+          ['agent_version', '探针版本', server.agent_version],
+          ['collect_interval', '采集间隔', valueWithUnit(server.collect_interval, ' s')],
+          ['report_interval', 'HTTP 上报间隔', valueWithUnit(server.report_interval, ' s')],
+          ['wss_report_interval', 'WSS 上报间隔', valueWithUnit(server.wss_report_interval, ' s')],
+          ['connection_mode', '探针连接模式', server.connection_mode === 'auto' ? '自动' : server.connection_mode],
+          ['ping_mode', '延时探测方式', server.ping_mode.toUpperCase()],
+          ['last_updated', '最近上报', time(server.last_updated)],
+          ['timestamp', '节点记录时间', time(server.timestamp)],
+          ['history_partition_id', '历史分区 ID', server.history_partition_id],
+          ['sysConfig.long_history_points', '长历史采样点数', server.sysConfig.long_history_points]
+        ]]
+      ];
+
+      for (const [title, rows] of groups) {
+        const group = panel(title);
+        group.append(fieldList(rows));
+        fields.append(group);
+      }
+
+      if (server.disk) {
+        const io = panel('磁盘 I/O');
+        io.dataset.field = 'disk';
+        io.append(fieldList([
+          ['disk.read_bps', '读取速率', bytes(server.disk.read_bps, '/s')],
+          ['disk.write_bps', '写入速率', bytes(server.disk.write_bps, '/s')],
+          ['disk.read_iops', '读取 IOPS', server.disk.read_iops],
+          ['disk.write_iops', '写入 IOPS', server.disk.write_iops],
+          ['disk.await_ms', '平均等待', valueWithUnit(server.disk.await_ms, ' ms')],
+          ['disk.util', 'I/O 利用率', valueWithUnit(server.disk.util, '%')]
+        ]));
+        fields.append(io);
+      }
+
+      const gpu = panel('GPU');
+      gpu.dataset.field = 'gpu_info';
+      const devices = JSON.parse(server.gpu_info);
+      if (!devices.length) gpu.append(element('p', 'aqua-detail-subtitle', '暂无 GPU 数据'));
+      for (const device of devices) {
+        const list = fieldList([
+          ['gpu_info[].id', 'GPU ID', device.id],
+          ['gpu_info[].name', '设备型号', device.name],
+          ['gpu_info[].info', 'GPU 使用率', valueWithUnit(device.info, '%')]
+        ]);
+        list.classList.add('aqua-gpu');
+        gpu.append(list);
+      }
+      fields.append(gpu, buildReportPanel(server));
+    }
+
+    function renderHistory() {
+      const hours = Number(range.value);
+      const minutes = hours === 0.167 ? 10 : hours * 60;
+      const count = Math.min(120, Math.max(21, minutes + 1));
+      const memory = 100 * activeServer.ram_used / activeServer.ram_total;
+      const cpuPoints = [];
+      const memoryPoints = [];
+      for (let index = 0; index < count; index++) {
+        const minute = -minutes * (1 - index / (count - 1));
+        cpuPoints.push(activeServer.cpu + 3.7 * Math.sin(minute * .85) + 1.4 * Math.sin(minute * 2.7));
+        memoryPoints.push(memory + 2.1 * Math.sin(minute * .6));
+      }
+      plottedHistory = [[cpuPoints, blue], [memoryPoints, sea]];
+      const middle = minutes / 2;
+      const ticks = root.querySelectorAll('.aqua-x-axis span');
+      [minutes, middle, 0].forEach((offset, index) => {
+        const tick = activeServer.last_updated - offset * 60_000;
+        ticks[index].textContent = minutes >= 720 ? dateTime.format(tick).slice(5, 16) : clock.format(tick);
+      });
+      trend.setAttribute('aria-label', 'CPU 和内存使用率，' + range.selectedOptions[0].textContent + '样例曲线');
+      drawSeries(trend, plottedHistory, 100);
+    }
+
+    function openDetail(server) {
+      activeServer = server;
+      detail.hidden = false;
+      overview.hidden = true;
+      root.querySelector('#aqua-server-name').textContent = server.name;
+      showStatus(root.querySelector('#aqua-server-status'), server);
+      root.querySelector('.aqua-detail-subtitle').textContent = server.os + ' · ' + regions[server.region] +
+        (isOnline(server) ? '' : ' · 最近一次上报');
+
+      const measures = usage(server)
+        .filter(({ key }) => key !== 'swap')
+        .map(({ label, percent }) => [label, formatPercent(percent)]);
+      measures.push(['TCP / UDP', server.tcp_conn + ' / ' + server.udp_conn]);
+      root.querySelector('.aqua-detail-ribbon').replaceChildren(...measures.map(([label, value]) => {
+        const cell = element('div');
+        cell.append(element('dt', '', label), element('dd', '', value));
+        return cell;
+      }));
+      range.value = '0.167';
+      renderHistory();
+      renderFields(server);
+      root.scrollIntoView({ block: 'start' });
+      root.querySelector('[data-back]').focus({ preventScroll: true });
+    }
+
+    function openOverview() {
+      overview.hidden = false;
+      detail.hidden = true;
+      renderOverview();
+      root.scrollIntoView({ block: 'start' });
+    }
+
+    root.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if ('server' in button.dataset) {
+        const server = servers.find(({ id }) => id === button.dataset.server);
+        if (server) openDetail(server);
+      } else if ('back' in button.dataset) {
+        const previous = activeServer?.id;
+        openOverview();
+        root.querySelector('[data-server="' + previous + '"]')?.focus({ preventScroll: true });
+      } else if ('region' in button.dataset) {
+        zone = button.dataset.region;
+        for (const regionButton of root.querySelectorAll('[data-region]')) {
+          regionButton.setAttribute('aria-pressed', String(regionButton.dataset.region === zone));
+        }
+        openOverview();
+      }
+    });
+    search.addEventListener('input', renderOverview);
+    range.addEventListener('change', renderHistory);
+    renderOverview();
+  })();
+</script>
