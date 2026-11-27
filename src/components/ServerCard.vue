@@ -40,18 +40,19 @@ const connections = computed(() => [
   [t('processes'), 'processes'], ['TCP', 'tcp_conn'], ['UDP', 'udp_conn']
 ].map(([label, key]) => [label, format(online.value ? number(server.value[key]) : null)]))
 const boot = computed(() => {
-  const timestamp = epochMillis(server.value.boot_time)
+  const value = server.value.boot_time
+  const timestamp = epochMillis(value)
   return timestamp === null ? null : {
-    short: timeLabel(timestamp),
-    full: timeLabel(timestamp, true),
+    label: timeLabel(value, true),
     iso: new Date(timestamp).toISOString()
   }
 })
 const directions = computed(() => {
   const data = server.value
+  const speed = value => transferValue(online.value ? value : null, '/s')
   const rates = [
-    { key: 'up', arrow: '⬆️', speed: data.net_out_speed, total: data.net_tx },
-    { key: 'down', arrow: '⬇️', speed: data.net_in_speed, total: data.net_rx }
+    { key: 'up', arrow: '⬆️', speed: speed(data.net_out_speed), total: transferValue(data.net_tx) },
+    { key: 'down', arrow: '⬇️', speed: speed(data.net_in_speed), total: transferValue(data.net_rx) }
   ]
   return themeOptions.value.speed_order === 'download-first' ? rates.reverse() : rates
 })
@@ -75,6 +76,10 @@ const fee = computed(() => {
 const renewal = computed(() => expiry.value && ['0', '1'].includes(server.value.auto_renewal)
   ? t(server.value.auto_renewal === '1' ? 'renewOn' : 'renewOff')
   : '')
+
+function transferValue(value, suffix = '') {
+  return { full: bytes(value, suffix), compact: bytes(value, suffix, true) }
+}
 
 function progress(value) {
   return (Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0) + '%'
@@ -113,13 +118,25 @@ function progress(value) {
     <div class="aqua-server-network">
       <dl class="aqua-server-connections">
         <div v-for="[label, value] of connections" :key="label"><dt>{{ label }}</dt><dd><b>{{ value }}</b></dd></div>
-        <div v-if="boot"><dt class="aqua-sr-only">{{ t('boot') }}</dt><dd><time :datetime="boot.iso" :title="boot.full">{{ boot.short }}</time></dd></div>
+        <div v-if="boot"><dt class="aqua-sr-only">{{ t('boot') }}</dt><dd><time :datetime="boot.iso">{{ boot.label }}</time></dd></div>
       </dl>
       <dl class="aqua-transfer">
         <div v-for="direction of directions" :key="direction.key" class="aqua-transfer-direction" :data-direction="direction.key">
           <dt><span class="aqua-emoji-arrow" aria-hidden="true">{{ direction.arrow }}</span><span class="aqua-sr-only">{{ t(direction.key) }}</span></dt>
-          <dd><span class="aqua-sr-only">{{ t('speed') }}</span><b>{{ online ? bytes(direction.speed, '/s') : '—' }}</b></dd>
-          <dd v-if="showTraffic" class="aqua-transfer-total"><span class="aqua-sr-only">{{ t('transfer') }}</span><b>{{ bytes(direction.total) }}</b></dd>
+          <dd>
+            <span class="aqua-sr-only">{{ t('speed') }}</span>
+            <b :title="direction.speed.full">
+              <span class="aqua-transfer-full">{{ direction.speed.full }}</span>
+              <span class="aqua-transfer-compact">{{ direction.speed.compact }}</span>
+            </b>
+          </dd>
+          <dd v-if="showTraffic" class="aqua-transfer-total">
+            <span class="aqua-sr-only">{{ t('transfer') }}</span>
+            <b :title="direction.total.full">
+              <span class="aqua-transfer-full">{{ direction.total.full }}</span>
+              <span class="aqua-transfer-compact">{{ direction.total.compact }}</span>
+            </b>
+          </dd>
         </div>
       </dl>
     </div>

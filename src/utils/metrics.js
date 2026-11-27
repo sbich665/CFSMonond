@@ -21,6 +21,7 @@ const MiB = 1024 ** 2
 const GiB = 1024 ** 3
 const DAY = 86_400_000
 const formatNumber = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 })
+const formatCompactNumber = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3, useGrouping: false })
 const formatTime = new Intl.DateTimeFormat('sv-SE', {
   year: 'numeric', month: '2-digit', day: '2-digit',
   hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
@@ -53,12 +54,13 @@ export function format(value, suffix = '') {
     : (typeof value === 'number' ? formatNumber.format(value) : value) + suffix
 }
 
-export function bytes(value, suffix = '') {
+export function bytes(value, suffix = '', compact = false) {
   const count = number(value)
   if (count === null) return '—'
   const size = Math.abs(count)
   const index = size >= 1024 ? Math.min(4, Math.floor(Math.log(size) / Math.log(1024))) : 0
-  return format(count / 1024 ** index, ' ' + ['B', 'KiB', 'MiB', 'GiB', 'TiB'][index] + suffix)
+  const formatter = compact ? formatCompactNumber : formatNumber
+  return formatter.format(count / 1024 ** index) + ' ' + ['B', 'KiB', 'MiB', 'GiB', 'TiB'][index] + suffix
 }
 
 export function percent(used, total) {
