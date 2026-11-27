@@ -88,8 +88,8 @@ export function quotaUsage(server) {
 export function capacityRows(server) {
   return [
     ['memory', number(server.ram_used), number(server.ram_total), MiB],
-    ['swap', number(server.swap_used), number(server.swap_total), MiB],
     ['disk', number(server.disk_used), number(server.disk_total), MiB],
+    ['swap', number(server.swap_used), number(server.swap_total), MiB],
     ['traffic', quotaUsage(server), quotaBytes(server.traffic_limit), 1]
   ].filter(([key, , total]) =>
     !['swap', 'traffic'].includes(key) || total > 0

@@ -78,7 +78,9 @@ onUnmounted(() => observer?.disconnect())
       </span>
     </div>
     <div v-show="points.length" class="aqua-chart">
-      <div class="aqua-y-axis"><span>{{ tick(scale) }}</span><span>{{ tick(scale / 2) }}</span><span>{{ tick(0) }}</span></div>
+      <div class="aqua-y-axis">
+        <span v-for="value of [scale, scale / 2, 0]" :key="value" :title="tick(value)">{{ tick(value) }}</span>
+      </div>
       <canvas ref="canvas" class="aqua-trend" role="img" :aria-label="title"></canvas>
       <div class="aqua-x-axis"><span v-for="(point, index) of endPoints" :key="index">{{ point }}</span></div>
     </div>

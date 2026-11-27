@@ -135,10 +135,16 @@ function progress(value) {
       </div>
       <div v-if="hasNetwork || paths.length || expiry || fee" class="aqua-server-details">
         <div v-if="hasNetwork" class="aqua-server-network">
-          <dl v-if="connections.length || boot" class="aqua-server-connections">
-            <div v-for="[label, value] of connections" :key="label"><dt>{{ label }}</dt><dd><b>{{ value }}</b></dd></div>
-            <div v-if="boot"><dt class="aqua-sr-only">{{ t('boot') }}</dt><dd><time :datetime="boot.iso">{{ boot.label }}</time></dd></div>
-          </dl>
+          <div v-if="connections.length || boot" class="aqua-server-connections">
+            <dl v-if="connections.length" class="aqua-connection-counts">
+              <div v-for="[label, value] of connections" :key="label">
+                <dt :title="label">{{ label }}</dt><dd :title="String(value)"><b>{{ value }}</b></dd>
+              </div>
+            </dl>
+            <div v-if="boot" class="aqua-server-boot">
+              <span class="aqua-sr-only">{{ t('boot') }}</span><time :datetime="boot.iso">{{ boot.label }}</time>
+            </div>
+          </div>
           <dl v-if="directions.length" class="aqua-transfer">
             <div v-for="direction of directions" :key="direction.key" class="aqua-transfer-direction" :data-direction="direction.key">
               <dt><span class="aqua-emoji-arrow" aria-hidden="true">{{ direction.arrow }}</span><span class="aqua-sr-only">{{ t(direction.key) }}</span></dt>
