@@ -106,11 +106,11 @@ function progress(value) {
 <template>
   <article class="aqua-panel aqua-server">
     <header class="aqua-server-header">
-      <h2><RouterLink class="aqua-server-link" :to="route">{{ server.name || server.id }}</RouterLink></h2>
+      <h2><RouterLink class="aqua-server-link" :to="route" :title="server.name || String(server.id)">{{ server.name || server.id }}</RouterLink></h2>
       <span class="aqua-status"><i class="aqua-lamp" :class="{ 'is-offline': !online }"></i>{{ t(online ? 'online' : 'offline') }}</span>
       <p v-if="architecture || location" class="aqua-server-location">
-        <span v-if="architecture" class="aqua-arch" :title="t('architecture')">{{ architecture }}</span>
-        <span v-if="location">{{ location }}</span>
+        <span v-if="architecture" class="aqua-arch" :title="t('architecture') + ' ' + architecture">{{ architecture }}</span>
+        <span v-if="location" :title="location">{{ location }}</span>
       </p>
       <div v-if="protocols.length || agentVersion" class="aqua-server-tags">
         <span v-for="version in protocols" :key="version" class="aqua-ip-tag"
@@ -119,47 +119,49 @@ function progress(value) {
         <span v-if="agentVersion" class="aqua-agent" :title="agentVersion">{{ agentVersion }}</span>
       </div>
     </header>
-    <div v-if="metrics.length" class="aqua-server-usage">
-      <div v-for="metric of metrics" :key="metric.key" class="aqua-measure" :data-metric="metric.key">
-        <span>{{ metric.label }}</span>
-        <span v-if="metric.percent !== null" class="aqua-track" aria-hidden="true"><i :style="{ width: progress(metric.percent) }"></i></span>
-        <b v-if="metric.percent !== null" class="aqua-measure-value">{{ percentLabel(metric.percent) }}</b>
-        <span v-if="metric.capacity" class="aqua-measure-capacity">{{ metric.capacity }}</span>
-      </div>
-    </div>
-    <div v-if="connections.length || boot || directions.length" class="aqua-server-network">
-      <dl v-if="connections.length || boot" class="aqua-server-connections">
-        <div v-for="[label, value] of connections" :key="label"><dt>{{ label }}</dt><dd><b>{{ value }}</b></dd></div>
-        <div v-if="boot"><dt class="aqua-sr-only">{{ t('boot') }}</dt><dd><time :datetime="boot.iso">{{ boot.label }}</time></dd></div>
-      </dl>
-      <dl v-if="directions.length" class="aqua-transfer">
-        <div v-for="direction of directions" :key="direction.key" class="aqua-transfer-direction" :data-direction="direction.key">
-          <dt><span class="aqua-emoji-arrow" aria-hidden="true">{{ direction.arrow }}</span><span class="aqua-sr-only">{{ t(direction.key) }}</span></dt>
-          <dd v-if="direction.speed">
-            <span class="aqua-sr-only">{{ t('speed') }}</span>
-            <b :title="direction.speed.full">
-              <span class="aqua-transfer-full">{{ direction.speed.full }}</span>
-              <span class="aqua-transfer-compact">{{ direction.speed.compact }}</span>
-            </b>
-          </dd>
-          <dd v-if="direction.total" class="aqua-transfer-total">
-            <span class="aqua-sr-only">{{ t('transfer') }}</span>
-            <b :title="direction.total.full">
-              <span class="aqua-transfer-full">{{ direction.total.full }}</span>
-              <span class="aqua-transfer-compact">{{ direction.total.compact }}</span>
-            </b>
-          </dd>
+    <div class="aqua-server-body">
+      <div v-if="metrics.length" class="aqua-server-usage">
+        <div v-for="metric of metrics" :key="metric.key" class="aqua-measure" :data-metric="metric.key">
+          <span>{{ metric.label }}</span>
+          <span v-if="metric.percent !== null" class="aqua-track" aria-hidden="true"><i :style="{ width: progress(metric.percent) }"></i></span>
+          <b v-if="metric.percent !== null" class="aqua-measure-value">{{ percentLabel(metric.percent) }}</b>
+          <span v-if="metric.capacity" class="aqua-measure-capacity">{{ metric.capacity }}</span>
         </div>
-      </dl>
+      </div>
+      <div v-if="connections.length || boot || directions.length" class="aqua-server-network">
+        <dl v-if="connections.length || boot" class="aqua-server-connections">
+          <div v-for="[label, value] of connections" :key="label"><dt>{{ label }}</dt><dd><b>{{ value }}</b></dd></div>
+          <div v-if="boot"><dt class="aqua-sr-only">{{ t('boot') }}</dt><dd><time :datetime="boot.iso">{{ boot.label }}</time></dd></div>
+        </dl>
+        <dl v-if="directions.length" class="aqua-transfer">
+          <div v-for="direction of directions" :key="direction.key" class="aqua-transfer-direction" :data-direction="direction.key">
+            <dt><span class="aqua-emoji-arrow" aria-hidden="true">{{ direction.arrow }}</span><span class="aqua-sr-only">{{ t(direction.key) }}</span></dt>
+            <dd v-if="direction.speed">
+              <span class="aqua-sr-only">{{ t('speed') }}</span>
+              <b :title="direction.speed.full">
+                <span class="aqua-transfer-full">{{ direction.speed.full }}</span>
+                <span class="aqua-transfer-compact">{{ direction.speed.compact }}</span>
+              </b>
+            </dd>
+            <dd v-if="direction.total" class="aqua-transfer-total">
+              <span class="aqua-sr-only">{{ t('transfer') }}</span>
+              <b :title="direction.total.full">
+                <span class="aqua-transfer-full">{{ direction.total.full }}</span>
+                <span class="aqua-transfer-compact">{{ direction.total.compact }}</span>
+              </b>
+            </dd>
+          </div>
+        </dl>
+      </div>
+      <ProbeMatrix :rows="paths" />
+      <footer v-if="expiry || fee" class="aqua-card-billing">
+        <span v-if="expiry" class="aqua-expiry">
+          <span>{{ t('expires') }} <time :datetime="expiry.date">{{ expiry.date }}</time></span>
+          <span class="aqua-expiry-days" :class="{ 'aqua-timeout': expiry.days < 0 }">{{ expiryText }}</span>
+        </span>
+        <span v-if="fee">{{ t('fee') }} <b>{{ fee }}</b></span>
+        <span v-if="renewal">{{ renewal }}</span>
+      </footer>
     </div>
-    <ProbeMatrix :rows="paths" />
-    <footer v-if="expiry || fee" class="aqua-card-billing">
-      <span v-if="expiry" class="aqua-expiry">
-        <span>{{ t('expires') }} <time :datetime="expiry.date">{{ expiry.date }}</time></span>
-        <span class="aqua-expiry-days" :class="{ 'aqua-timeout': expiry.days < 0 }">{{ expiryText }}</span>
-      </span>
-      <span v-if="fee">{{ t('fee') }} <b>{{ fee }}</b></span>
-      <span v-if="renewal">{{ renewal }}</span>
-    </footer>
   </article>
 </template>
