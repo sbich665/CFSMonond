@@ -18,27 +18,33 @@ const server = computed(() => props.row)
 const online = computed(() => isOnline(server.value, props.now))
 const switches = computed(() => props.site.list?.sysConfig ?? {})
 const showTraffic = computed(() => switches.value.show_tf !== false)
+const protocols = computed(() => [4, 6].filter(version => server.value['ip_v' + version] === '1'))
+const architecture = computed(() => fieldText(server.value.arch))
+const location = computed(() => [server.value.os, server.value.region].map(fieldText).filter(Boolean).join(' · '))
 const route = computed(() => ({
   name: 'server', params: { id: String(server.value.id) },
   query: sites.length > 1 ? { site: String(props.site.index) } : undefined
 }))
 const metrics = computed(() => {
   const data = server.value
-  const active = online.value
   const cores = number(data.cpu_cores)
   return [{
-    key: 'cpu', label: 'CPU', percent: active ? number(data.cpu) : null,
-    capacity: cores > 0 ? format(cores, ' ' + t('cores')) : '—'
+    key: 'cpu', label: 'CPU', percent: nonNegative(data.cpu),
+    capacity: cores > 0 ? format(cores, ' ' + t('cores')) : '',
+    agent: fieldText(data.agent_version)
   }, ...capacityRows(data).filter(([key]) => key !== 'traffic' || showTraffic.value).map(
-    ([key, used, total, multiplier]) => ({
-      key, label: t(key), percent: active || key === 'traffic' ? percent(used, total) : null,
-      capacity: capacityLabel(active || key === 'traffic' ? used : null, total, multiplier)
-    })
-  )]
+    ([key, used, total, multiplier]) => {
+      const current = nonNegative(used)
+      return { key, label: t(key), percent: percent(current, total), capacity: capacityLabel(current, total, multiplier) }
+    }
+  )].filter(metric => metric.percent !== null || metric.capacity || metric.agent)
 })
 const connections = computed(() => [
   [t('processes'), 'processes'], ['TCP', 'tcp_conn'], ['UDP', 'udp_conn']
-].map(([label, key]) => [label, format(online.value ? number(server.value[key]) : null)]))
+].flatMap(([label, key]) => {
+  const value = nonNegative(server.value[key])
+  return value === null ? [] : [[label, format(value)]]
+}))
 const boot = computed(() => {
   const value = server.value.boot_time
   const timestamp = epochMillis(value)
@@ -49,11 +55,11 @@ const boot = computed(() => {
 })
 const directions = computed(() => {
   const data = server.value
-  const speed = value => transferValue(online.value ? value : null, '/s')
+  const total = value => showTraffic.value ? transferValue(value) : null
   const rates = [
-    { key: 'up', arrow: '⬆️', speed: speed(data.net_out_speed), total: transferValue(data.net_tx) },
-    { key: 'down', arrow: '⬇️', speed: speed(data.net_in_speed), total: transferValue(data.net_rx) }
-  ]
+    { key: 'up', arrow: '⬆️', speed: transferValue(data.net_out_speed, '/s'), total: total(data.net_tx) },
+    { key: 'down', arrow: '⬇️', speed: transferValue(data.net_in_speed, '/s'), total: total(data.net_rx) }
+  ].filter(direction => direction.speed || direction.total)
   return themeOptions.value.speed_order === 'download-first' ? rates.reverse() : rates
 })
 const paths = computed(() => switches.value.show_three_net_details === true
@@ -71,14 +77,25 @@ const fee = computed(() => {
   const price = number(server.value.price)
   if (price === 0 || price === -1) return t('free')
   if (price === null || price < 0) return ''
-  return (server.value.currency || '') + format(price) + ' / ' + t(server.value.billing_cycle || 'month')
+  const period = server.value.billing_cycle
+  return (server.value.currency || '') + format(price) + (period ? ' / ' + t(period) : '')
 })
 const renewal = computed(() => expiry.value && ['0', '1'].includes(server.value.auto_renewal)
   ? t(server.value.auto_renewal === '1' ? 'renewOn' : 'renewOff')
   : '')
 
+function fieldText(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function nonNegative(value) {
+  const reading = number(value)
+  return reading !== null && reading >= 0 ? reading : null
+}
+
 function transferValue(value, suffix = '') {
-  return { full: bytes(value, suffix), compact: bytes(value, suffix, true) }
+  const reading = nonNegative(value)
+  return reading === null ? null : { full: bytes(reading, suffix), compact: bytes(reading, suffix, true) }
 }
 
 function progress(value) {
@@ -89,48 +106,45 @@ function progress(value) {
 <template>
   <article class="aqua-panel aqua-server">
     <header class="aqua-server-header">
-      <div class="aqua-server-title">
-        <h2><RouterLink class="aqua-server-link" :to="route">{{ server.name || server.id }}</RouterLink></h2>
-        <span class="aqua-status"><i class="aqua-lamp" :class="{ 'is-offline': !online }"></i>{{ t(online ? 'online' : 'offline') }}</span>
-      </div>
-      <div class="aqua-server-meta">
-        <p class="aqua-server-location">
-          <span v-if="server.arch" class="aqua-arch" :title="t('architecture')">{{ server.arch }}</span>
-          <span>{{ [server.os, server.region].filter(Boolean).join(' · ') }}</span>
-        </p>
-        <div class="aqua-server-tags">
-          <span v-for="version in [4, 6]" :key="version" class="aqua-ip-tag"
-            :data-reachable="server['ip_v' + version] === '1'"
-            :aria-label="'IPv' + version + ' ' + t(server['ip_v' + version] === '1' ? 'reachable' : 'unreachable')"
-          >IPv{{ version }} {{ server['ip_v' + version] === '1' ? '✓' : '×' }}</span>
-          <span v-if="server.agent_version" class="aqua-agent">{{ t('agent') }} {{ server.agent_version }}</span>
-        </div>
+      <h2><RouterLink class="aqua-server-link" :to="route">{{ server.name || server.id }}</RouterLink></h2>
+      <span class="aqua-status"><i class="aqua-lamp" :class="{ 'is-offline': !online }"></i>{{ t(online ? 'online' : 'offline') }}</span>
+      <p v-if="architecture || location" class="aqua-server-location">
+        <span v-if="architecture" class="aqua-arch" :title="t('architecture')">{{ architecture }}</span>
+        <span v-if="location">{{ location }}</span>
+      </p>
+      <div v-if="protocols.length" class="aqua-server-tags">
+        <span v-for="version in protocols" :key="version" class="aqua-ip-tag"
+          :title="'IPv' + version + ' ' + t('reachable')"
+        >v{{ version }}</span>
       </div>
     </header>
-    <div class="aqua-server-usage">
+    <div v-if="metrics.length" class="aqua-server-usage">
       <div v-for="metric of metrics" :key="metric.key" class="aqua-measure" :data-metric="metric.key">
         <span>{{ metric.label }}</span>
-        <span class="aqua-track" aria-hidden="true"><i :style="{ width: progress(metric.percent) }"></i></span>
-        <b>{{ percentLabel(metric.percent) }}</b>
-        <span class="aqua-measure-capacity">{{ metric.capacity }}</span>
+        <span v-if="metric.percent !== null" class="aqua-track" aria-hidden="true"><i :style="{ width: progress(metric.percent) }"></i></span>
+        <b v-if="metric.percent !== null" class="aqua-measure-value">{{ percentLabel(metric.percent) }}</b>
+        <span v-if="metric.capacity || metric.agent" class="aqua-measure-capacity">
+          <span v-if="metric.capacity">{{ metric.capacity }}</span>
+          <span v-if="metric.agent" class="aqua-agent" :title="t('agent_version') + ' ' + metric.agent">{{ t('agent') }} {{ metric.agent }}</span>
+        </span>
       </div>
     </div>
-    <div class="aqua-server-network">
-      <dl class="aqua-server-connections">
+    <div v-if="connections.length || boot || directions.length" class="aqua-server-network">
+      <dl v-if="connections.length || boot" class="aqua-server-connections">
         <div v-for="[label, value] of connections" :key="label"><dt>{{ label }}</dt><dd><b>{{ value }}</b></dd></div>
         <div v-if="boot"><dt class="aqua-sr-only">{{ t('boot') }}</dt><dd><time :datetime="boot.iso">{{ boot.label }}</time></dd></div>
       </dl>
-      <dl class="aqua-transfer">
+      <dl v-if="directions.length" class="aqua-transfer">
         <div v-for="direction of directions" :key="direction.key" class="aqua-transfer-direction" :data-direction="direction.key">
           <dt><span class="aqua-emoji-arrow" aria-hidden="true">{{ direction.arrow }}</span><span class="aqua-sr-only">{{ t(direction.key) }}</span></dt>
-          <dd>
+          <dd v-if="direction.speed">
             <span class="aqua-sr-only">{{ t('speed') }}</span>
             <b :title="direction.speed.full">
               <span class="aqua-transfer-full">{{ direction.speed.full }}</span>
               <span class="aqua-transfer-compact">{{ direction.speed.compact }}</span>
             </b>
           </dd>
-          <dd v-if="showTraffic" class="aqua-transfer-total">
+          <dd v-if="direction.total" class="aqua-transfer-total">
             <span class="aqua-sr-only">{{ t('transfer') }}</span>
             <b :title="direction.total.full">
               <span class="aqua-transfer-full">{{ direction.total.full }}</span>

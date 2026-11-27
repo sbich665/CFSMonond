@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { RouterView } from 'vue-router'
+import { version as themeVersion } from '../package.json'
 import ThemeSettings from './components/ThemeSettings.vue'
 import TurnstileGate from './components/TurnstileGate.vue'
 import { useMonitor } from './composables/useMonitor.js'
@@ -77,6 +78,7 @@ onUnmounted(() => media.removeEventListener('change', changeSystem))
           href="https://github.com/huilang-me/CF-Server-Monitor/" target="_blank" rel="noopener noreferrer"
           :title="primary.config?.version || undefined"
         >Powered by CF-Server-Monitor</a>
+        <span class="aqua-footer-version">CFSMonond v{{ themeVersion }}</span>
       </footer>
     </div>
   </div>

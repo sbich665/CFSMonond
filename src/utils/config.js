@@ -32,6 +32,7 @@ export function normalizeThemeOptions(options) {
     ...raw,
     speed_order: raw.speed_order === 'download-first' ? 'download-first' : 'upload-first',
     three_net_panel_count: Number.isInteger(count) && count >= 0 && count <= 8 ? count : 3,
-    show_admin_link: raw.show_admin_link !== false
+    show_admin_link: raw.show_admin_link !== false,
+    show_server_sidebar: raw.show_server_sidebar !== false
   }
 }

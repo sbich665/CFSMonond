@@ -32,6 +32,10 @@ const { t } = useLabels()
         <input type="checkbox" :checked="themeOptions.show_admin_link" @change="settings.update({ show_admin_link: $event.target.checked })">
         <span>{{ t('adminLink') }}</span>
       </label>
+      <label class="aqua-setting-check">
+        <input type="checkbox" :checked="themeOptions.show_server_sidebar" @change="settings.update({ show_server_sidebar: $event.target.checked })">
+        <span>{{ t('serverSidebar') }}</span>
+      </label>
       <button v-if="settings.status.value === 'saveFailed'" class="aqua-button" type="button" @click="settings.retry">{{ t('retry') }}</button>
     </div>
   </section>

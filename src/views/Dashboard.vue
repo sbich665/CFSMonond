@@ -11,23 +11,47 @@ import { epochMillis, OFFLINE_AFTER_MS } from '../utils/metrics.js'
 const { sites, login, list, themeOptions } = useMonitor()
 const { t } = useLabels()
 const search = ref('')
-const region = ref('')
+const selection = ref(null)
 const now = ref(Date.now())
 const { states, connect, disconnect } = useConnections()
 let alive = true
 let clock
 
 const entries = computed(() => sites.flatMap(site => (site.list?.servers ?? []).map(row => ({ site, row }))))
-const regions = computed(() => [...new Set(entries.value.map(({ row }) => row.region).filter(Boolean))].sort())
+const groups = computed(() => [...new Set(entries.value.map(({ row }) => fieldValue(row, 'server_group')))])
+const hasGroups = computed(() => groups.value.some(Boolean))
+const regions = computed(() => [...new Set(entries.value.map(({ row }) => fieldValue(row, 'region')).filter(Boolean))].sort())
+const navigation = computed(() => [
+  { field: 'server_group', label: 'groups', names: hasGroups.value ? groups.value : [] },
+  { field: 'region', label: 'region', names: regions.value }
+].filter(section => section.names.length))
 const filtered = computed(() => {
   const query = search.value.trim().toLowerCase()
-  return entries.value.filter(({ row }) => (!region.value || row.region === region.value) &&
-    [row.name, row.region, row.os, row.tags].some(value => String(value ?? '').toLowerCase().includes(query)))
+  const filter = themeOptions.value.show_server_sidebar ? selection.value : null
+  return entries.value.filter(({ row }) => (!filter || fieldValue(row, filter.field) === filter.name) &&
+    [row.name, row.region, row.server_group, row.os, row.tags].some(value => String(value ?? '').toLowerCase().includes(query)))
+})
+const grouped = computed(() => {
+  const sections = new Map()
+  for (const entry of filtered.value) {
+    const name = fieldValue(entry.row, 'server_group')
+    if (!sections.has(name)) sections.set(name, [])
+    sections.get(name).push(entry)
+  }
+  return [...sections]
 })
 const totals = computed(() => Object.fromEntries(['total', 'online', 'offline'].map(key => [
   key, sites.reduce((sum, site) => sum + (Number(site.list?.stats?.[key]) || 0), 0)
 ])))
 const loading = computed(() => sites.some(site => Boolean(site.listInFlight)))
+
+function fieldValue(row, field) {
+  return typeof row[field] === 'string' ? row[field].trim() : ''
+}
+
+watch(() => themeOptions.value.show_server_sidebar, visible => {
+  if (!visible) selection.value = null
+})
 
 function updateClock() {
   clearTimeout(clock)
@@ -99,12 +123,15 @@ onUnmounted(() => { alive = false })
 </script>
 
 <template>
-  <div class="aqua-layout">
-    <nav class="aqua-sidebar" :aria-label="t('region')">
-      <button class="aqua-side-button" type="button" :aria-pressed="!region" @click="region = ''">{{ t('allServers') }}</button>
-      <div v-if="regions.length" class="aqua-region-list">
-        <span class="aqua-nav-label">{{ t('region') }}</span>
-        <button v-for="name of regions" :key="name" class="aqua-side-button" type="button" :aria-pressed="region === name" @click="region = name">{{ name }}</button>
+  <div class="aqua-layout" :class="{ 'aqua-layout-full': !themeOptions.show_server_sidebar }">
+    <nav v-if="themeOptions.show_server_sidebar" class="aqua-sidebar" :aria-label="t('allServers')">
+      <button class="aqua-side-button" type="button" :aria-pressed="!selection" @click="selection = null">{{ t('allServers') }}</button>
+      <div v-for="section in navigation" :key="section.field" class="aqua-nav-list" :aria-label="t(section.label)">
+        <span class="aqua-nav-label">{{ t(section.label) }}</span>
+        <button v-for="name in section.names" :key="name" class="aqua-side-button" type="button"
+          :aria-pressed="selection?.field === section.field && selection.name === name"
+          @click="selection = { field: section.field, name }"
+        >{{ name || t('ungrouped') }}</button>
       </div>
     </nav>
     <main class="aqua-main">
@@ -132,9 +159,12 @@ onUnmounted(() => { alive = false })
       </template>
       <p v-if="loading && !entries.length" class="aqua-state" role="status">{{ t('loading') }}</p>
       <p v-else-if="!filtered.length" class="aqua-empty">{{ t('empty') }}</p>
-      <div class="aqua-server-grid">
-        <ServerCard v-for="{ row, site } of filtered" :key="site.index + ':' + row.id" :row="row" :site="site" :now="now" />
-      </div>
+      <section v-for="[name, servers] in grouped" :key="name" class="aqua-server-group">
+        <h2 v-if="hasGroups">{{ name || t('ungrouped') }}</h2>
+        <div class="aqua-server-grid">
+          <ServerCard v-for="{ row, site } of servers" :key="site.index + ':' + row.id" :row="row" :site="site" :now="now" />
+        </div>
+      </section>
     </main>
   </div>
 </template>

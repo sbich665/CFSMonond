@@ -77,14 +77,12 @@ export function quotaBytes(value) {
 }
 
 export function quotaUsage(server) {
-  const rx = number(server.net_rx_monthly) ?? 0
-  const tx = number(server.net_tx_monthly) ?? 0
-  switch (server.traffic_calc_type) {
-    case 'dl': return rx
-    case 'ul': return tx
-    case 'max': return Math.max(rx, tx)
-    default: return rx + tx
-  }
+  const rx = number(server.net_rx_monthly)
+  const tx = number(server.net_tx_monthly)
+  if (server.traffic_calc_type === 'dl') return rx
+  if (server.traffic_calc_type === 'ul') return tx
+  if (rx === null || tx === null || rx < 0 || tx < 0) return null
+  return server.traffic_calc_type === 'max' ? Math.max(rx, tx) : rx + tx
 }
 
 export function capacityRows(server) {
@@ -93,15 +91,16 @@ export function capacityRows(server) {
     ['swap', number(server.swap_used), number(server.swap_total), MiB],
     ['disk', number(server.disk_used), number(server.disk_total), MiB],
     ['traffic', quotaUsage(server), quotaBytes(server.traffic_limit), 1]
-  ].filter(([key, used, total]) =>
-    !['swap', 'traffic'].includes(key) || (total > 0 && used !== null && used >= 0)
+  ].filter(([key, , total]) =>
+    !['swap', 'traffic'].includes(key) || total > 0
   )
 }
 
 export function capacityLabel(used, total, multiplier) {
-  if (!(total > 0)) return '—'
-  const capacity = bytes(total * multiplier)
-  const current = used === null ? '—' : bytes(used * multiplier)
+  const capacity = total > 0 ? bytes(total * multiplier) : ''
+  if (used === null) return capacity
+  const current = bytes(used * multiplier)
+  if (!capacity) return current
   const [amount, unit] = current.split(' ')
   return (unit && capacity.endsWith(' ' + unit) ? amount : current) + ' / ' + capacity
 }

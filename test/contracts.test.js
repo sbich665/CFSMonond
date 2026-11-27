@@ -3,7 +3,7 @@ import test from 'node:test'
 import { createApi } from '../src/utils/api.js'
 import { adminUrl, normalizeThemeOptions } from '../src/utils/config.js'
 import { openLive, socketUrl, subscribedIds } from '../src/utils/live.js'
-import { capacityRows, expiryInfo, latestPatch, probeRows } from '../src/utils/metrics.js'
+import { capacityLabel, capacityRows, expiryInfo, latestPatch, probeRows } from '../src/utils/metrics.js'
 
 const base = 'https://test-worker.example'
 const instant = Date.parse('2026-11-27T06:30:00Z')
@@ -110,7 +110,9 @@ test('private Turnstile uses both credentials, recovers once after a stale crede
   await api.servers()
   server.rotateCredential()
   await api.history('sg-01', 0.167)
-  const draft = normalizeThemeOptions({ speed_order: 'download-first', three_net_panel_count: 5, show_admin_link: false, accent: 'blue' })
+  assert.equal(normalizeThemeOptions({}).show_server_sidebar, true)
+  const draft = normalizeThemeOptions({ speed_order: 'download-first', three_net_panel_count: 5, show_admin_link: false, show_server_sidebar: false, accent: 'blue' })
+  assert.equal(draft.show_server_sidebar, false)
   assert.deepEqual(await api.saveThemeOptions(draft), draft)
   assert.equal(server.challengeCount(), 2)
   assert.deepEqual(JSON.parse(server.recorded.at(-1).body), { theme_options: draft })
@@ -145,6 +147,12 @@ test('incremental batches retain report fields and distinguish unavailable, time
   assert.equal(rows[0].lossRate, '0%')
   assert(!capacityRows({ swap_total: 0, swap_used: 0 }).some(row => row[0] === 'swap'))
   assert(capacityRows({ swap_total: 1024, swap_used: 0 }).some(row => row[0] === 'swap'))
+  const quota = { traffic_limit: '1', traffic_calc_type: 'total', net_rx_monthly: 0 }
+  assert.deepEqual(capacityRows(quota).at(-1), ['traffic', null, 1024 ** 3, 1])
+  assert.deepEqual(capacityRows({ ...quota, net_tx_monthly: 0 }).at(-1), ['traffic', 0, 1024 ** 3, 1])
+  assert.equal(capacityLabel(null, null, 1), '')
+  assert.equal(capacityLabel(null, 1024, 1), '1 KiB')
+  assert.equal(capacityLabel(0, 1024, 1), '0 B / 1 KiB')
   assert.deepEqual(expiryInfo('2027-01-12', new Date(2026, 10, 27, 12)), { date: '2027-01-12', days: 46 })
   assert.equal(expiryInfo('2027-02-30'), null)
 })

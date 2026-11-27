@@ -3,6 +3,7 @@ import { useMonitor } from '../composables/useMonitor.js'
 
 const zh = {
   overview: '服务器总览', allServers: '全部服务器', search: '搜索服务器', region: '区域',
+  groups: '分类', ungrouped: '未分类', serverSidebar: '显示服务器侧栏',
   total: '总数', online: '在线', offline: '离线', admin: '管理', settings: '主题设置',
   speedOrder: '网速显示顺序', uploadFirst: '上行在前', downloadFirst: '下行在前',
   lineCount: '线路显示条数', hideLines: '隐藏线路区', adminLink: '显示后台入口',
@@ -49,6 +50,7 @@ const zh = {
 
 const en = {
   overview: 'Servers', allServers: 'All servers', search: 'Search servers', region: 'Regions',
+  groups: 'Groups', ungrouped: 'Ungrouped', serverSidebar: 'Show server sidebar',
   total: 'Total', online: 'Online', offline: 'Offline', admin: 'Admin', settings: 'Theme settings',
   speedOrder: 'Speed display order', uploadFirst: 'Upload first', downloadFirst: 'Download first',
   lineCount: 'Probe lines', hideLines: 'Hide probe panel', adminLink: 'Show admin link',
