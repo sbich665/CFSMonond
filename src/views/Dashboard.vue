@@ -117,13 +117,15 @@ onUnmounted(() => { alive = false })
 </script>
 
 <template>
-  <div class="aqua-layout" :class="{ 'aqua-layout-full': !sidebarVisible }">
+  <div class="aqua-layout">
     <nav v-show="sidebarVisible" id="aqua-server-sidebar" class="aqua-sidebar" :aria-label="t('allServers')">
-      <button class="aqua-side-button" type="button" :aria-pressed="!selection" @click="selection = null">{{ t('allServers') }}</button>
+      <div class="aqua-nav-list">
+        <button class="aqua-side-button" type="button" :aria-pressed="!selection" @click="selection = null">{{ t('allServers') }}</button>
+      </div>
       <div v-for="section in navigation" :key="section.field" class="aqua-nav-list" role="group" :aria-label="t(section.label)">
         <span class="aqua-nav-label">{{ t(section.label) }}</span>
         <button v-for="name in section.names" :key="name" class="aqua-side-button" type="button"
-          :aria-pressed="selection?.field === section.field && selection.name === name"
+          :aria-pressed="selection?.field === section.field && selection.name === name" :title="name || t('ungrouped')"
           @click="selection = { field: section.field, name }"
         >{{ name || t('ungrouped') }}</button>
       </div>
@@ -138,12 +140,18 @@ onUnmounted(() => { alive = false })
           <input v-model="search" class="aqua-search" type="search" :placeholder="t('search')" :aria-label="t('search')">
         </div>
       </div>
-      <dl class="aqua-ribbon aqua-totals">
-        <div v-for="key of ['total', 'online', 'offline']" :key="key">
-          <dt><i class="aqua-lamp" :class="{ 'is-blue': key === 'total', 'is-offline': key === 'offline' }"></i> {{ t(key) }}</dt>
-          <dd>{{ totals[key] }}</dd>
+      <div class="aqua-overview-summary">
+        <dl class="aqua-ribbon aqua-totals">
+          <div v-for="key of ['total', 'online', 'offline']" :key="key">
+            <dt><i class="aqua-lamp" :class="{ 'is-blue': key === 'total', 'is-offline': key === 'offline' }"></i> {{ t(key) }}</dt>
+            <dd>{{ totals[key] }}</dd>
+          </div>
+        </dl>
+        <div class="aqua-summary-spares" aria-hidden="true">
+          <div class="aqua-summary-spare"></div>
+          <div class="aqua-summary-spare"></div>
         </div>
-      </dl>
+      </div>
       <template v-for="site of sites" :key="site.index">
         <p v-if="site.configError || site.listError" class="aqua-state" role="alert">
           {{ site.base }} · {{ t('loadError') }} · {{ t((site.configError || site.listError).message) }}

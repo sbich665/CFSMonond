@@ -39,7 +39,7 @@ onMounted(async () => {
     try {
       const background = new URL(runtime.background, window.location.href)
       if (['http:', 'https:'].includes(background.protocol)) {
-        document.body.style.backgroundImage = 'url(' + JSON.stringify(background.href) + ')'
+        document.body.style.setProperty('--aqua-custom-wallpaper', 'url(' + JSON.stringify(background.href) + ')')
       }
     } catch {
       // Invalid build configuration is rejected by Vite before publishing.

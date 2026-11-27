@@ -96,7 +96,7 @@ function nonNegative(value) {
 
 function transferValue(value, suffix = '') {
   const reading = nonNegative(value)
-  return reading === null ? null : { full: bytes(reading, suffix), compact: bytes(reading, suffix, true) }
+  return reading === null ? null : bytes(reading, suffix)
 }
 
 function capacityText(label) {
@@ -133,48 +133,38 @@ function progress(value) {
           <span v-if="metric.capacity" class="aqua-measure-capacity" :title="metric.capacity">{{ capacityText(metric.capacity) }}</span>
         </div>
       </div>
-      <div v-if="hasNetwork || paths.length || expiry || fee" class="aqua-server-details">
-        <div v-if="hasNetwork" class="aqua-server-network">
-          <div v-if="connections.length || boot" class="aqua-server-connections">
-            <dl v-if="connections.length" class="aqua-connection-counts">
-              <div v-for="[label, value] of connections" :key="label">
-                <dt :title="label">{{ label }}</dt><dd :title="String(value)"><b>{{ value }}</b></dd>
-              </div>
-            </dl>
-            <div v-if="boot" class="aqua-server-boot">
-              <span class="aqua-sr-only">{{ t('boot') }}</span><time :datetime="boot.iso">{{ boot.label }}</time>
-            </div>
+      <div v-if="hasNetwork" class="aqua-server-network">
+        <dl v-if="connections.length || boot" class="aqua-server-connections">
+          <div v-for="[label, value] of connections" :key="label" class="aqua-connection-count">
+            <dt>{{ label }}</dt><dd><b>{{ value }}</b></dd>
           </div>
-          <dl v-if="directions.length" class="aqua-transfer">
-            <div v-for="direction of directions" :key="direction.key" class="aqua-transfer-direction" :data-direction="direction.key">
-              <dt><span class="aqua-emoji-arrow" aria-hidden="true">{{ direction.arrow }}</span><span class="aqua-sr-only">{{ t(direction.key) }}</span></dt>
-              <dd v-if="direction.speed">
-                <span class="aqua-sr-only">{{ t('speed') }}</span>
-                <b :title="direction.speed.full">
-                  <span class="aqua-transfer-full">{{ direction.speed.full }}</span>
-                  <span class="aqua-transfer-compact">{{ direction.speed.compact }}</span>
-                </b>
-              </dd>
-              <dd v-if="direction.total" class="aqua-transfer-total">
-                <span class="aqua-sr-only">{{ t('transfer') }}</span>
-                <b :title="direction.total.full">
-                  <span class="aqua-transfer-full">{{ direction.total.full }}</span>
-                  <span class="aqua-transfer-compact">{{ direction.total.compact }}</span>
-                </b>
-              </dd>
-            </div>
-          </dl>
-        </div>
-        <ProbeMatrix :rows="paths" />
-        <footer v-if="expiry || fee" class="aqua-card-billing">
-          <span v-if="expiry" class="aqua-expiry">
-            <span>{{ t('expires') }} <time :datetime="expiry.date">{{ expiry.date }}</time></span>
-            <span class="aqua-expiry-days" :class="{ 'aqua-timeout': expiry.days < 0 }">{{ expiryText }}</span>
-          </span>
-          <span v-if="fee">{{ t('fee') }} <b>{{ fee }}</b></span>
-          <span v-if="renewal">{{ renewal }}</span>
-        </footer>
+          <div v-if="boot" class="aqua-server-boot">
+            <dt class="aqua-sr-only">{{ t('boot') }}</dt><dd><time :datetime="boot.iso">{{ boot.label }}</time></dd>
+          </div>
+        </dl>
+        <dl v-if="directions.length" class="aqua-transfer">
+          <div v-for="direction of directions" :key="direction.key" class="aqua-transfer-direction" :data-direction="direction.key">
+            <dt><span class="aqua-emoji-arrow" aria-hidden="true">{{ direction.arrow }}</span><span class="aqua-sr-only">{{ t(direction.key) }}</span></dt>
+            <dd v-if="direction.speed">
+              <span class="aqua-sr-only">{{ t('speed') }}</span>
+              <b :title="direction.speed">{{ direction.speed }}</b>
+            </dd>
+            <dd v-if="direction.total" class="aqua-transfer-total">
+              <span class="aqua-sr-only">{{ t('transfer') }}</span>
+              <b :title="direction.total">{{ direction.total }}</b>
+            </dd>
+          </div>
+        </dl>
       </div>
+      <ProbeMatrix :rows="paths" />
+      <footer v-if="expiry || fee" class="aqua-card-billing">
+        <span v-if="expiry" class="aqua-expiry">
+          <span>{{ t('expires') }} <time :datetime="expiry.date">{{ expiry.date }}</time></span>
+          <span class="aqua-expiry-days" :class="{ 'aqua-timeout': expiry.days < 0 }">{{ expiryText }}</span>
+        </span>
+        <span v-if="fee">{{ t('fee') }} <b>{{ fee }}</b></span>
+        <span v-if="renewal">{{ renewal }}</span>
+      </footer>
     </div>
   </article>
 </template>
