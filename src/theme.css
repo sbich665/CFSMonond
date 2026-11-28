@@ -56,7 +56,7 @@ body {
   --aqua-card-min: 43ch;
   --aqua-control-pad: clamp(.2em, .15em + .35cqi, .5em);
   --aqua-control-size: calc(1lh + 2 * var(--aqua-control-pad) + 2px);
-  container: aqua-preview / inline-size;
+  container-type: inline-size;
   color-scheme: light;
   color: var(--aqua-ink);
   font: 14px/1.5 var(--aqua-font-family);
@@ -65,7 +65,6 @@ body {
   text-align: left;
 }
 #cfs-aqua *, #cfs-aqua *::before, #cfs-aqua *::after { box-sizing: border-box; }
-#cfs-aqua [hidden] { display: none !important; }
 #cfs-aqua :is(p, h1, h2, h3, dd, dl) { margin: 0; }
 #cfs-aqua :is(button, input, select, option) { font: inherit; font-variant-numeric: inherit; color: inherit; }
 #cfs-aqua :is(button, select):enabled { cursor: pointer; }
@@ -341,7 +340,6 @@ body {
   vertical-align: baseline;
   flex: none;
 }
-#cfs-aqua .aqua-lamp.is-blue { border-color: #1d5cbb; background: radial-gradient(circle at 37% 26%, #f1faff, #56c4ff 42%, #225bc7 85%); }
 #cfs-aqua .aqua-lamp.is-offline { border-color: #9c2533; background: radial-gradient(circle at 37% 26%, #fff2ef, #f96567 43%, #bb2333 80%); box-shadow: 0 0 3px #9b26384d; }
 #cfs-aqua :is(.aqua-server-grid, .aqua-field-panels) {
   display: grid;
@@ -349,8 +347,9 @@ body {
   align-items: stretch;
 }
 #cfs-aqua .aqua-server-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--aqua-card-min)), 1fr));
+  grid-template-columns: repeat(var(--aqua-card-repeat, auto-fit), minmax(min(100%, var(--aqua-card-min)), 1fr));
 }
+#cfs-aqua .aqua-server-grid:has(> .aqua-server:only-child) { --aqua-card-repeat: auto-fill; }
 #cfs-aqua .aqua-field-panels {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, max(31ch, (100% - var(--aqua-section-gap)) / 2)), 1fr));
 }
@@ -542,14 +541,14 @@ body {
   box-shadow: inset 0 0 0 1px #1d67ad, inset 0 2px #e0f7ff76;
 }
 #cfs-aqua :is(.aqua-server-network, .aqua-card-probes) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   font-size: var(--aqua-reading-size);
 }
 #cfs-aqua .aqua-server-network {
   --aqua-network-gutter: clamp(.22em, .9cqi, .62em);
   --aqua-network-pad: clamp(.25em, 1.16cqi, .65em);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 #cfs-aqua .aqua-server-connections {
   display: flex;
@@ -610,13 +609,15 @@ body {
   width: 100%;
   font: inherit;
   font-variant-numeric: inherit;
-  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
 }
 #cfs-aqua .aqua-card-probes.aqua-path-paired {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--aqua-probe-lane, 18ch)), 1fr));
+  display: flex;
+  flex-wrap: wrap;
 }
+#cfs-aqua .aqua-path-paired .aqua-path-table { flex: 1 1 min(100%, var(--aqua-probe-lane, 18ch)); width: auto; }
+#cfs-aqua .aqua-card-probes { overflow-x: auto; }
 #cfs-aqua .aqua-card-probes:has(.aqua-path-trends) { --aqua-probe-lane: 22ch; }
 #cfs-aqua .aqua-card-probes:has(.aqua-path-delay.is-average) { --aqua-probe-lane: 16.5em; }
 #cfs-aqua .aqua-path-table + .aqua-path-table { box-shadow: 0 0 0 1px var(--aqua-line); }
@@ -649,25 +650,17 @@ body {
 #cfs-aqua .aqua-path-trends thead th:first-child { width: 26%; }
 #cfs-aqua .aqua-path-trends thead .aqua-path-delay { width: 37%; }
 #cfs-aqua .aqua-path-table thead .aqua-path-delay.is-average { width: 41%; }
-#cfs-aqua .aqua-path-value.is-charted {
-  --aqua-probe-gap: clamp(.28em, .55cqi, .7em);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(48%, 4em, 64%);
-  inline-size: min(100%, calc(8em + var(--aqua-probe-gap)));
-  margin-inline: auto;
+#cfs-aqua .aqua-path-value {
+  display: inline-flex;
   align-items: center;
-  column-gap: var(--aqua-probe-gap);
+  gap: clamp(.24em, .5cqi, .52em);
+  vertical-align: middle;
 }
-#cfs-aqua .aqua-path-value .aqua-path-reading { min-inline-size: 0; overflow-wrap: anywhere; }
-#cfs-aqua .aqua-path-value.is-charted .aqua-path-reading {
-  grid-column: 2;
-  text-align: end;
-}
-#cfs-aqua .aqua-path-value.is-charted .aqua-path-reading:only-child { grid-column: 1 / -1; }
+#cfs-aqua .aqua-path-value .aqua-path-reading { display: block; white-space: nowrap; }
 #cfs-aqua .aqua-probe-sparkline {
   display: block;
-  grid-column: 1;
-  inline-size: 100%;
+  flex: none;
+  inline-size: clamp(1.35em, 6.5cqi, 3.65em);
   block-size: 1.35em;
   border-radius: .25em;
   background: var(--aqua-well);
@@ -770,7 +763,7 @@ body {
   border-radius: 5px;
 }
 #cfs-aqua .aqua-sample h3 { margin-bottom: 5px; }
-#cfs-aqua .aqua-gpu + .aqua-gpu, #cfs-aqua .aqua-report + .aqua-report { margin-top: 8px; }
+#cfs-aqua .aqua-report + .aqua-report { margin-top: 8px; }
 #cfs-aqua .aqua-footer {
   display: flex;
   flex-wrap: wrap;

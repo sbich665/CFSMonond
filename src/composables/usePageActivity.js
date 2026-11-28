@@ -3,7 +3,7 @@ import { epochMillis, latestPatch } from '../utils/metrics.js'
 import { ID_LIMIT, openLive } from '../utils/live.js'
 import { useMonitor } from './useMonitor.js'
 
-export function usePageActivity({ start, resume, suspend, dispose = suspend }) {
+export function usePageActivity({ start, resume, suspend }) {
   let started = false
   let wasVisible
   function visibility() {
@@ -25,7 +25,7 @@ export function usePageActivity({ start, resume, suspend, dispose = suspend }) {
   })
   onUnmounted(() => {
     document.removeEventListener('visibilitychange', visibility)
-    dispose()
+    suspend()
   })
 }
 

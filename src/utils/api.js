@@ -25,7 +25,7 @@ export function createApi(base, {
   function unauthorized() {
     clearJwt(storage)
     if (config) config.authorization = false
-    onUnauthorized?.(base)
+    onUnauthorized?.()
   }
 
   async function send(path, { query, ...options } = {}) {
@@ -106,9 +106,8 @@ export function createApi(base, {
   }
 
   return {
-    base,
     getConfig,
-    servers: signal => authorizedRequest('/api/servers', { signal }),
+    servers: () => authorizedRequest('/api/servers'),
     server: (id, signal) => authorizedRequest('/api/server', { query: { id }, signal }),
     async history(id, hours, signal) {
       if (!HOURS.includes(hours)) throw new Error('Invalid history range')

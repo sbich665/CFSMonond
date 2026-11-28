@@ -63,7 +63,7 @@ const boot = computed(() => {
   const value = server.value.boot_time
   const timestamp = epochMillis(value)
   return timestamp === null ? null : {
-    label: timeLabel(value, true),
+    label: timeLabel(value),
     iso: new Date(timestamp).toISOString(),
     days: uptimeDays(timestamp, online.value ? props.now : epochMillis(server.value.last_updated))
   }

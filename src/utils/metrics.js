@@ -153,7 +153,7 @@ export function bootTrafficUsage(server) {
   return trafficUsage(server.net_rx, server.net_tx)
 }
 
-export function quotaUsage(server) {
+function quotaUsage(server) {
   return trafficUsage(server.net_rx_monthly, server.net_tx_monthly, server.traffic_calc_type)
 }
 
@@ -179,7 +179,7 @@ export function capacityLabel(used, total, multiplier) {
   return (unit && capacity.endsWith(' ' + unit) ? amount : current) + ' / ' + capacity
 }
 
-export function probeReading(value, unit, timeout) {
+function probeReading(value, unit, timeout) {
   if (value === null) return timeout
   return Number.isFinite(value) ? format(value, unit) : ''
 }
@@ -242,7 +242,7 @@ export function probeRows(server, config, timeout, locale, includeTargets = fals
     const address = server[target]
     if (!delay && !lossRate && !(includeTargets && address)) return []
     return [{
-      id, target, address, name: config[name] || (locale === 'zh' ? zh : en),
+      id, address, name: config[name] || (locale === 'zh' ? zh : en),
       delay, lossRate, delayTimeout: delayValue === null, lossTimeout: lossValue === null,
       delayAveraged: delayAverage !== null, lossAveraged: lossAverage !== null,
       trend: delayAverage !== null || lossAverage !== null ? history : null
@@ -292,11 +292,9 @@ export function sortOverviewEntries(entries, order, now) {
     }).map(({ entry }) => entry)
 }
 
-export function timeLabel(value, full = false) {
+export function timeLabel(value) {
   const timestamp = epochMillis(value)
-  if (timestamp === null) return '—'
-  const label = formatTime.format(timestamp)
-  return full ? label : label.slice(5, 16)
+  return timestamp === null ? '—' : formatTime.format(timestamp)
 }
 
 export function gpuDevices(value) {

@@ -178,7 +178,7 @@ function fieldValue(key, value) {
   if (key === 'await_ms') return format(value, ' ms')
   if (key === 'traffic_limit') return bytes(quotaBytes(value))
   if (key === 'price' && [0, -1].includes(number(value))) return t('free')
-  if (['boot_time', 'last_updated', 'timestamp'].includes(key)) return timeLabel(value, true)
+  if (['boot_time', 'last_updated', 'timestamp'].includes(key)) return timeLabel(value)
   if (key === 'arch') return format(value)
   if (key === 'is_hidden') return t(value === '1' ? 'hidden' : 'shown')
   if (['ip_v4', 'ip_v6'].includes(key)) return t(value === '1' ? 'reachable' : 'unreachable')
@@ -304,12 +304,12 @@ const charts = computed(() => {
         <div v-for="(report, index) of server.latestReportUpdates" :key="index" class="aqua-report">
           <dl class="aqua-fields">
             <div><dt>{{ t('id') }}</dt><dd>{{ report.serverId }}</dd></div>
-            <div><dt>{{ t('reportTs') }}</dt><dd>{{ timeLabel(report.reportTs, true) }}</dd></div>
+            <div><dt>{{ t('reportTs') }}</dt><dd>{{ timeLabel(report.reportTs) }}</dd></div>
             <div><dt>{{ t('reportAge') }}</dt><dd>{{ format(report.reportAgeMs, ' ms') }}</dd></div>
           </dl>
           <div v-if="Array.isArray(report.samples)" class="aqua-sample-grid">
             <div v-for="(sample, position) of report.samples" :key="position" class="aqua-sample">
-              <h3>{{ timeLabel(sample.ts, true) }}</h3>
+              <h3>{{ timeLabel(sample.ts) }}</h3>
               <dl class="aqua-fields">
                 <div v-for="(value, key) in sample.data || sample.payload || sample.metrics || {}" :key="key">
                   <dt>{{ t(key) }}</dt><dd>{{ fieldValue(key, value) }}</dd>

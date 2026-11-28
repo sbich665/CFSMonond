@@ -2,7 +2,7 @@ function meta(name) {
   return document.querySelector('meta[name="' + name + '"]')?.content.trim() || ''
 }
 
-export function apiOrigin(value) {
+function apiOrigin(value) {
   const url = new URL(value)
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
   if ((url.protocol !== 'https:' && !(local && url.protocol === 'http:')) ||
