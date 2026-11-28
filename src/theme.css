@@ -295,7 +295,12 @@ body {
   align-items: baseline;
   gap: var(--aqua-summary-gap);
 }
-#cfs-aqua [data-summary="trafficSummary"] { --aqua-summary-gap: clamp(.18em, .1em + .2cqi, .67em); }
+#cfs-aqua [data-summary="realtimeNetwork"] { --aqua-summary-gap: clamp(.22em, .14em + .28cqi, .8em); }
+#cfs-aqua [data-summary="trafficSummary"] {
+  --aqua-summary-gap: clamp(.18em, .1em + .13cqi, .67em);
+  font-size: clamp(.62rem, .43rem + .23cqi, .75rem);
+  padding-inline: calc(var(--aqua-gutter) / 1.6);
+}
 #cfs-aqua [data-summary="trafficSummary"] .aqua-summary-group + .aqua-summary-group {
   border-inline-start: 1px solid var(--aqua-line);
   padding-inline-start: var(--aqua-summary-gap);
@@ -307,6 +312,7 @@ body {
 }
 #cfs-aqua .aqua-summary-caption { font-size: 1em; font-weight: 650; }
 #cfs-aqua .aqua-summary-fields > div { gap: clamp(.16em, .08em + .11cqi, .3em); }
+#cfs-aqua [data-summary="trafficSummary"] .aqua-summary-fields > div { gap: clamp(.13em, .07em + .06cqi, .24em); }
 #cfs-aqua [data-summary="onlineNodes"] .aqua-summary-fields > div { gap: clamp(.2em, .12em + .15cqi, .4em); }
 #cfs-aqua :is(.aqua-summary-fields dt, .aqua-summary-empty) { color: var(--aqua-muted); }
 #cfs-aqua .aqua-summary-fields dd { font-weight: 700; }
@@ -530,7 +536,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-evenly;
-  align-items: center;
+  align-items: baseline;
   padding: var(--aqua-network-pad) var(--aqua-network-gutter);
   gap: calc(var(--aqua-network-gutter) / 2) clamp(.1em, .5cqi, .5em);
   font-size: clamp(.645rem, .49rem + .79cqi, .75rem);
@@ -625,6 +631,7 @@ body {
   justify-content: center;
   gap: clamp(.15em, .47cqi, .5em);
 }
+#cfs-aqua .aqua-path-value:has(.aqua-probe-sparkline) { justify-content: flex-start; }
 #cfs-aqua .aqua-path-value .aqua-path-reading { min-inline-size: 0; overflow-wrap: anywhere; }
 #cfs-aqua .aqua-probe-sparkline {
   display: block;

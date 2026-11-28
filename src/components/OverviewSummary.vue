@@ -2,7 +2,7 @@
 import { computed, watch } from 'vue'
 import { useMonitor } from '../composables/useMonitor.js'
 import { useLabels } from '../utils/i18n.js'
-import { bytes, format, overviewStats } from '../utils/metrics.js'
+import { bytes, format, overviewStats, trafficBreakdown } from '../utils/metrics.js'
 
 const props = defineProps({ now: { type: Number, required: true } })
 const { entries, ratePeaks, themeOptions } = useMonitor()
@@ -30,19 +30,26 @@ function directions({ download, upload }) {
 }
 
 function trafficReadings(traffic) {
-  const { download, upload } = traffic
-  if (download === null && upload === null) return []
-  const readings = byteReadings([['summaryTotal', (download ?? 0) + (upload ?? 0)], ...directions(traffic)])
-  const unit = ' ' + readings[0][1].split(' ').at(-1)
-  if (!readings.every(([, value]) => value.endsWith(unit))) return readings
-  return readings.map(([key, value, title]) => [key, key === 'summaryTotal' ? value : value.slice(0, -unit.length), title])
+  const readings = directions(traffic)
+  const displayed = trafficBreakdown(traffic)
+  if (!displayed) return byteReadings(readings)
+  const suffix = ' ' + displayed.unit
+  const total = format(displayed.total, suffix)
+  const exact = raw => format(raw, ' B')
+  return [
+    ['summaryTotal', total, total + ' · ' + exact(traffic.download + traffic.upload)],
+    ...readings.map(([key, raw]) => {
+      const value = format(key === 'up' ? displayed.upload : displayed.download)
+      return [key, value, value + suffix + ' · ' + exact(raw)]
+    })
+  ]
 }
 
 const panels = computed(() => {
   const { total, online, ipv4Only, ipv6Only, dualStack, bootTraffic, periodTraffic } = stats.value
   return [
     ['onlineNodes', [['', [
-      ['onlineOfTotal', format(online) + '/' + format(total)], ['offline', format(total - online)],
+      ['onlineOfTotal', format(online) + ' / ' + format(total)], ['offline', format(total - online)],
       ['ipv4Only', format(ipv4Only)], ['ipv6Only', format(ipv6Only)], ['dualStack', format(dualStack)]
     ]]]],
     ['realtimeNetwork', [

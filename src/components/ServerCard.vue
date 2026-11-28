@@ -4,8 +4,8 @@ import { RouterLink } from 'vue-router'
 import ProbeMatrix from './ProbeMatrix.vue'
 import { useMonitor } from '../composables/useMonitor.js'
 import { useLabels } from '../utils/i18n.js'
-import { bytes, capacityLabel, capacityRows, epochMillis, expiryInfo, fieldText, format, hasIpVersion, isOnline,
-  number, percent, percentLabel, probeRows, probeWindows, timeLabel, uptimeDays } from '../utils/metrics.js'
+import { bootTrafficUsage, bytes, capacityLabel, capacityRows, epochMillis, expiryInfo, fieldText, format,
+  hasIpVersion, isOnline, number, percent, percentLabel, probeRows, probeWindows, timeLabel, uptimeDays } from '../utils/metrics.js'
 import { osIconUrl } from '../utils/osIcon.js'
 
 const props = defineProps({
@@ -48,9 +48,8 @@ const metrics = computed(() => {
   }, ...capacityRows(data).filter(([key]) => key !== 'traffic' || showTraffic.value).map(
     ([key, used, total, multiplier]) => {
       const current = nonNegative(used)
-      const unlimited = key === 'traffic' && total === null && current !== null
-      const capacity = capacityLabel(current, total, multiplier) + (unlimited ? ' / ∞' : '')
-      return { key, label: t(key), percent: percent(current, total), capacity, unlimited }
+      const reading = key === 'traffic' ? trafficCapacity(current, total) : { capacity: capacityLabel(current, total, multiplier) }
+      return { key, label: t(key), percent: percent(current, total), ...reading }
     }
   )].filter(metric => metric.percent !== null || metric.capacity)
 })
@@ -117,8 +116,26 @@ function transferValue(value, suffix = '') {
   return reading === null ? null : bytes(reading, suffix)
 }
 
+function trafficCapacity(current, limit) {
+  const bootUsed = bootTrafficUsage(server.value)
+  const resetDay = number(server.value.reset_day)
+  const period = t(resetDay === 1 ? 'monthTraffic' : resetDay === 0 ? 'meteredTraffic' : 'billingPeriod')
+  const reset = Number.isInteger(resetDay) && resetDay >= 1 && resetDay <= 31 ? t('cycleReset', { day: resetDay }) : ''
+  const readings = [
+    [t('bootTraffic'), bootUsed === null ? '' : bytes(bootUsed)],
+    [reset ? period + ' · ' + reset : period, current === null ? '' : bytes(current)],
+    [t('traffic_limit'), limit === null ? '∞' : bytes(limit)]
+  ].filter(([, value]) => value)
+  const capacity = readings.map(([, value], index) => {
+    const unit = ' ' + value.split(' ').at(-1)
+    return readings[index + 1]?.[1].endsWith(unit) ? value.slice(0, -unit.length) : value
+  }).join(' / ')
+  const capacityTitle = readings.map(([label, value]) => label + ' ' + (value === '∞' ? t('unlimited') : value)).join(' / ')
+  return { capacity, capacityTitle }
+}
+
 function capacityText(label) {
-  return label.replaceAll(' ', '\u00a0').replace('\u00a0/\u00a0', ' /\u00a0')
+  return label.replaceAll(' ', '\u00a0').replaceAll('\u00a0/\u00a0', ' /\u00a0')
 }
 
 function progress(value) {
@@ -153,7 +170,7 @@ function progress(value) {
           <b v-if="metric.percent !== null" class="aqua-measure-value">{{ percentLabel(metric.percent) }}</b>
           <span v-if="metric.capacity || (metric.key === 'cpu' && uptime)" class="aqua-measure-capacity"
             :class="{ 'aqua-cpu-capacity': metric.key === 'cpu' }"
-            :title="metric.unlimited ? metric.capacity.replace('∞', t('unlimited')) : metric.capacity"
+            :title="metric.capacityTitle || metric.capacity"
           >
             <span v-if="metric.key === 'cpu' && uptime" class="aqua-uptime" :title="uptimeTitle"
             ><span class="aqua-sr-only">{{ t('uptime') }} </span>{{ uptime }}</span>

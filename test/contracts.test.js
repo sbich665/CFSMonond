@@ -4,7 +4,8 @@ import { createApi } from '../src/utils/api.js'
 import { adminUrl, normalizeThemeOptions } from '../src/utils/config.js'
 import { openLive, socketUrl, subscribedIds } from '../src/utils/live.js'
 import {
-  capacityLabel, capacityRows, expiryInfo, latestPatch, overviewStats, probeRows, probeWindows, uptimeDays
+  bootTrafficUsage, capacityLabel, capacityRows, expiryInfo, latestPatch, overviewStats, probeRows, probeWindows,
+  trafficBreakdown, uptimeDays
 } from '../src/utils/metrics.js'
 import { osIconUrl } from '../src/utils/osIcon.js'
 
@@ -188,6 +189,21 @@ test('overview traffic rows retain measured usage without a configured quota', (
   assert.deepEqual(capacityRows({ net_rx_monthly: 0, net_tx_monthly: 0 }).at(-1), ['traffic', 0, null, 1])
   assert.equal(capacityRows({ traffic_limit: '', net_rx_monthly: 2048 }).some(([key]) => key === 'traffic'), false)
   assert.equal(capacityRows({ traffic_calc_type: 'dl', net_rx_monthly: -1 }).some(([key]) => key === 'traffic'), false)
+  const bootOnly = { net_rx: '1024', net_tx: 512, traffic_calc_type: 'dl' }
+  assert.equal(bootTrafficUsage(bootOnly), 1536)
+  assert.deepEqual(capacityRows(bootOnly).at(-1), ['traffic', null, null, 1])
+  assert.equal(bootTrafficUsage({ net_rx: 450, net_tx: null }), null)
+})
+
+test('displayed traffic totals add up in the same unit and keep reported zeroes', () => {
+  assert.deepEqual(trafficBreakdown({ download: 896, upload: 384 }), {
+    download: 0.88, upload: 0.38, total: 1.26, unit: 'KiB'
+  })
+  assert.deepEqual(trafficBreakdown({ download: 1029, upload: 1029 }), {
+    download: 1, upload: 1, total: 2, unit: 'KiB'
+  })
+  assert.deepEqual(trafficBreakdown({ download: 40, upload: 0 }), { download: 40, upload: 0, total: 40, unit: 'B' })
+  assert.equal(trafficBreakdown({ download: 40, upload: null }), null)
 })
 
 test('overview probe windows keep real timestamps, gaps and zero readings', () => {

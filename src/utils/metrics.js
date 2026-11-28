@@ -20,6 +20,7 @@ export const OFFLINE_AFTER_MS = 5 * 60_000
 const MiB = 1024 ** 2
 const GiB = 1024 ** 3
 const DAY = 86_400_000
+const byteUnits = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
 const formatNumber = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 })
 const compactNumber = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3, useGrouping: false })
 const formatTime = new Intl.DateTimeFormat('sv-SE', {
@@ -63,13 +64,27 @@ export function format(value, suffix = '') {
     : (typeof value === 'number' ? formatNumber.format(value) : value) + suffix
 }
 
+function byteUnitIndex(size) {
+  return size >= 1024 ? Math.min(byteUnits.length - 1, Math.floor(Math.log(size) / Math.log(1024))) : 0
+}
+
 export function bytes(value, suffix = '', compact = false) {
   const count = number(value)
   if (count === null) return '—'
-  const size = Math.abs(count)
-  const index = size >= 1024 ? Math.min(4, Math.floor(Math.log(size) / Math.log(1024))) : 0
+  const index = byteUnitIndex(Math.abs(count))
   const formatter = compact ? compactNumber : formatNumber
-  return formatter.format(count / 1024 ** index) + ' ' + ['B', 'KiB', 'MiB', 'GiB', 'TiB'][index] + suffix
+  return formatter.format(count / 1024 ** index) + ' ' + byteUnits[index] + suffix
+}
+
+export function trafficBreakdown({ download, upload }) {
+  if (download === null || upload === null) return null
+  const index = byteUnitIndex(download + upload)
+  const divisor = 1024 ** index
+  const scale = index === 0 ? 1 : 100
+  // Add rounded directions in their shared unit so the displayed values reconcile.
+  const down = Math.round(download / divisor * scale)
+  const up = Math.round(upload / divisor * scale)
+  return { download: down / scale, upload: up / scale, total: (down + up) / scale, unit: byteUnits[index] }
 }
 
 export function hasIpVersion(server, version) {
@@ -125,13 +140,21 @@ export function quotaBytes(value) {
   return Number.isFinite(quota) && quota > 0 ? quota : null
 }
 
-export function quotaUsage(server) {
-  const rx = number(server.net_rx_monthly)
-  const tx = number(server.net_tx_monthly)
-  if (server.traffic_calc_type === 'dl') return rx
-  if (server.traffic_calc_type === 'ul') return tx
+function trafficUsage(received, transmitted, mode) {
+  const rx = number(received)
+  const tx = number(transmitted)
+  if (mode === 'dl') return rx !== null && rx >= 0 ? rx : null
+  if (mode === 'ul') return tx !== null && tx >= 0 ? tx : null
   if (rx === null || tx === null || rx < 0 || tx < 0) return null
-  return server.traffic_calc_type === 'max' ? Math.max(rx, tx) : rx + tx
+  return mode === 'max' ? Math.max(rx, tx) : rx + tx
+}
+
+export function bootTrafficUsage(server) {
+  return trafficUsage(server.net_rx, server.net_tx)
+}
+
+export function quotaUsage(server) {
+  return trafficUsage(server.net_rx_monthly, server.net_tx_monthly, server.traffic_calc_type)
 }
 
 export function capacityRows(server) {
@@ -142,7 +165,7 @@ export function capacityRows(server) {
     ['traffic', quotaUsage(server), quotaBytes(server.traffic_limit), 1]
   ].filter(([key, used, total]) => {
     if (key === 'swap') return total > 0
-    if (key === 'traffic') return total !== null || (used !== null && used >= 0)
+    if (key === 'traffic') return total !== null || used !== null || bootTrafficUsage(server) !== null
     return true
   })
 }
