@@ -140,9 +140,11 @@ export function capacityRows(server) {
     ['disk', number(server.disk_used), number(server.disk_total), MiB],
     ['swap', number(server.swap_used), number(server.swap_total), MiB],
     ['traffic', quotaUsage(server), quotaBytes(server.traffic_limit), 1]
-  ].filter(([key, , total]) =>
-    !['swap', 'traffic'].includes(key) || total > 0
-  )
+  ].filter(([key, used, total]) => {
+    if (key === 'swap') return total > 0
+    if (key === 'traffic') return total !== null || (used !== null && used >= 0)
+    return true
+  })
 }
 
 export function capacityLabel(used, total, multiplier) {

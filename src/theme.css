@@ -71,7 +71,7 @@ body {
 #cfs-aqua .aqua-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 #cfs-aqua :is(
   .aqua-panel, .aqua-setting-panel, .aqua-chart-panel, .aqua-sample, .aqua-summary-panel,
-  .aqua-button, .aqua-range, .aqua-status, .aqua-arch, .aqua-ip-tag, .aqua-group-tag
+  .aqua-button, .aqua-range, .aqua-status, .aqua-arch, .aqua-ip-tag, .aqua-agent, .aqua-group-tag
 ) {
   --aqua-face: var(--aqua-surface);
   border: 1px solid transparent;
@@ -295,7 +295,8 @@ body {
   align-items: baseline;
   gap: var(--aqua-summary-gap);
 }
-#cfs-aqua .aqua-summary-group + .aqua-summary-group {
+#cfs-aqua [data-summary="trafficSummary"] { --aqua-summary-gap: clamp(.18em, .1em + .2cqi, .67em); }
+#cfs-aqua [data-summary="trafficSummary"] .aqua-summary-group + .aqua-summary-group {
   border-inline-start: 1px solid var(--aqua-line);
   padding-inline-start: var(--aqua-summary-gap);
 }
@@ -303,10 +304,6 @@ body {
 #cfs-aqua [data-summary="onlineNodes"] .aqua-summary-fields { justify-content: space-between; }
 #cfs-aqua :is([data-summary-group="peakRate"], [data-summary-group="periodTraffic"]) {
   margin-inline-start: auto;
-  flex-direction: row-reverse;
-}
-#cfs-aqua :is([data-summary-group="peakRate"], [data-summary-group="periodTraffic"]) .aqua-summary-fields {
-  flex-direction: row-reverse;
 }
 #cfs-aqua .aqua-summary-caption { font-size: 1em; font-weight: 650; }
 #cfs-aqua .aqua-summary-fields > div { gap: clamp(.16em, .08em + .11cqi, .3em); }
@@ -390,9 +387,8 @@ body {
 }
 #cfs-aqua .aqua-meta-value { color: var(--aqua-ink); font-weight: 650; }
 #cfs-aqua .aqua-meta-item:has(.aqua-ip-tag) { flex: none; }
-#cfs-aqua .aqua-meta-item:has(.aqua-agent) { flex: none; max-inline-size: 24%; }
-#cfs-aqua .aqua-meta-item:has(.aqua-server-load) { flex: none; max-inline-size: 48%; }
-#cfs-aqua :is(.aqua-ip-tag, .aqua-arch, .aqua-group-tag) {
+#cfs-aqua .aqua-meta-item:has(.aqua-server-load) { max-inline-size: 48%; }
+#cfs-aqua :is(.aqua-ip-tag, .aqua-agent, .aqua-arch, .aqua-group-tag) {
   border-radius: 4px;
   padding-inline: .3em;
   line-height: 1.35;
@@ -408,13 +404,13 @@ body {
   font-size: var(--aqua-reading-size);
   color: var(--aqua-blue);
 }
-#cfs-aqua .aqua-ip-tag {
+#cfs-aqua :is(.aqua-ip-tag, .aqua-agent) {
   --aqua-face: linear-gradient(#f6fff9, #d3ede3);
   flex: none;
   color: #1f5b48;
   box-shadow: inset 0 1px var(--aqua-glint);
 }
-#cfs-aqua .aqua-agent { color: var(--aqua-muted); }
+#cfs-aqua .aqua-agent { margin-inline-start: auto; max-inline-size: min(32%, 18ch); }
 #cfs-aqua .aqua-arch { font-size: 11px; }
 #cfs-aqua .aqua-server-link {
   display: block;
@@ -575,6 +571,7 @@ body {
   display: block;
   font: 800 1.14em/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
 }
+#cfs-aqua .aqua-summary-fields .aqua-emoji-arrow { font-size: 1em; }
 #cfs-aqua .aqua-transfer-direction dd { min-width: 0; text-align: center; }
 #cfs-aqua .aqua-transfer-direction dd b {
   display: block;
@@ -620,14 +617,20 @@ body {
 }
 #cfs-aqua .aqua-path-table thead th:first-child { width: 33%; }
 #cfs-aqua .aqua-path-table thead .aqua-path-delay { width: 39%; }
-#cfs-aqua .aqua-path-trends thead th:first-child { width: 25%; }
-#cfs-aqua .aqua-path-trends thead .aqua-path-trend { width: 24%; }
-#cfs-aqua .aqua-path-trends thead .aqua-path-delay { width: 30%; }
+#cfs-aqua .aqua-path-trends thead th:first-child { width: 26%; }
+#cfs-aqua .aqua-path-trends thead .aqua-path-delay { width: 42%; }
+#cfs-aqua .aqua-path-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(.15em, .47cqi, .5em);
+}
+#cfs-aqua .aqua-path-value .aqua-path-reading { min-inline-size: 0; overflow-wrap: anywhere; }
 #cfs-aqua .aqua-probe-sparkline {
   display: block;
-  inline-size: min(100%, 10em);
-  block-size: 1.45em;
-  margin-inline: auto;
+  inline-size: min(45%, 6.5em);
+  min-inline-size: min(20%, 1.35em);
+  block-size: 1.35em;
   border-radius: .25em;
   background: var(--aqua-well);
   box-shadow: inset 0 0 0 1px var(--aqua-line), var(--aqua-well-shadow);
@@ -825,7 +828,7 @@ html[data-theme="dark"] {
 }
 [data-theme="dark"] #cfs-aqua :is(.aqua-brand, .aqua-footer, .aqua-side-button) { text-shadow: 0 1px #121e30; }
 [data-theme="dark"] #cfs-aqua .aqua-button { border-color: #7b8796 #536071 #222c3a; }
-[data-theme="dark"] #cfs-aqua .aqua-ip-tag {
+[data-theme="dark"] #cfs-aqua :is(.aqua-ip-tag, .aqua-agent) {
   --aqua-face: linear-gradient(#395f51, #263f36);
   color: #a9e5c8;
 }

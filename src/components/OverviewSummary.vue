@@ -8,7 +8,7 @@ const props = defineProps({ now: { type: Number, required: true } })
 const { entries, ratePeaks, themeOptions } = useMonitor()
 const { t } = useLabels()
 const stats = computed(() => overviewStats(entries.value, props.now))
-const arrows = { up: '↑', down: '↓' }
+const arrows = { up: '⬆️', down: '⬇️' }
 
 function peak(previous, reading) {
   return reading !== null && (previous === null || reading > previous) ? reading : previous
@@ -67,7 +67,7 @@ const panels = computed(() => {
           <dl class="aqua-summary-fields">
             <div v-for="[key, value, title] of readings" :key="key" :data-reading="key">
               <dt :title="t(key)" :class="{ 'aqua-sr-only': key === 'summaryTotal' }">
-                <template v-if="arrows[key]"><span aria-hidden="true">{{ arrows[key] }}</span><span class="aqua-sr-only">{{ t(key) }}</span></template>
+                <template v-if="arrows[key]"><span class="aqua-emoji-arrow" aria-hidden="true">{{ arrows[key] }}</span><span class="aqua-sr-only">{{ t(key) }}</span></template>
                 <template v-else>{{ t(key) }}</template>
               </dt>
               <dd :title="title || value" :aria-label="title">{{ value }}</dd>

@@ -25,7 +25,6 @@ const columns = computed(() => {
       <thead>
         <tr>
           <th scope="col"><span class="aqua-path-reading">{{ t('line') }}</span></th>
-          <th v-if="column.trend" scope="col" class="aqua-path-trend"><span class="aqua-path-reading">{{ t('probeTrend') }}</span></th>
           <th scope="col" class="aqua-path-delay"><span class="aqua-path-reading">{{ t(column.averages ? 'avgDelay' : 'delay') }}</span></th>
           <th scope="col"><span class="aqua-path-reading">{{ t('loss') }}</span></th>
         </tr>
@@ -34,17 +33,20 @@ const columns = computed(() => {
         <template v-for="row of column.rows" :key="row?.id ?? 'spacer'">
           <tr v-if="row" :data-probe="row.id">
             <th scope="row"><span class="aqua-path-reading" :title="row.name">{{ row.name }}</span></th>
-            <td v-if="column.trend" class="aqua-path-trend">
-              <ProbeSparkline v-if="row.trend" :name="row.name" :trend="row.trend" />
+            <td class="aqua-path-delay" :class="{ 'aqua-timeout': row.delayTimeout }">
+              <div class="aqua-path-value">
+                <ProbeSparkline v-if="row.delayAveraged" kind="delay" :name="row.name" :trend="row.trend" />
+                <span class="aqua-path-reading" :title="row.delay && t(row.delayAveraged ? 'avgDelay' : 'last_updated') + ' · ' + row.delay">{{ row.delay }}</span>
+              </div>
             </td>
-            <td :class="{ 'aqua-timeout': row.delayTimeout }">
-              <span class="aqua-path-reading" :title="row.delay && t(row.delayAveraged ? 'avgDelay' : 'last_updated') + ' · ' + row.delay">{{ row.delay }}</span>
-            </td>
-            <td :class="{ 'aqua-timeout': row.lossTimeout }">
-              <span class="aqua-path-reading" :title="row.lossRate && t(row.lossAveraged ? 'avgLoss' : 'last_updated') + ' · ' + row.lossRate">{{ row.lossRate }}</span>
+            <td class="aqua-path-loss" :class="{ 'aqua-timeout': row.lossTimeout }">
+              <div class="aqua-path-value">
+                <ProbeSparkline v-if="row.lossAveraged" kind="loss" :name="row.name" :trend="row.trend" />
+                <span class="aqua-path-reading" :title="row.lossRate && t(row.lossAveraged ? 'avgLoss' : 'last_updated') + ' · ' + row.lossRate">{{ row.lossRate }}</span>
+              </div>
             </td>
           </tr>
-          <tr v-else class="aqua-path-spacer" aria-hidden="true"><td></td><td v-if="column.trend"></td><td></td><td></td></tr>
+          <tr v-else class="aqua-path-spacer" aria-hidden="true"><td></td><td></td><td></td></tr>
         </template>
       </tbody>
     </table>

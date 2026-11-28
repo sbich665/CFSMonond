@@ -22,11 +22,11 @@ const showTraffic = computed(() => switches.value.show_tf !== false)
 const architecture = computed(() => fieldText(server.value.arch))
 const location = computed(() => [server.value.os, server.value.region].map(fieldText).filter(Boolean).join(' · '))
 const group = computed(() => fieldText(server.value.server_group))
+const agent = computed(() => fieldText(server.value.agent_version))
 const metadata = computed(() => [
   ...[4, 6].filter(version => hasIpVersion(server.value, version)).map(version => [
     'ipv' + version, 'aqua-ip-tag', 'v' + version, 'IPv' + version + ' ' + t('reachable')
   ]),
-  ['agent_version', 'aqua-agent'],
   ['load_avg', 'aqua-server-load'],
   ['kernel_version', 'aqua-server-kernel']
 ].flatMap(([key, className, value, title]) => {
@@ -48,7 +48,9 @@ const metrics = computed(() => {
   }, ...capacityRows(data).filter(([key]) => key !== 'traffic' || showTraffic.value).map(
     ([key, used, total, multiplier]) => {
       const current = nonNegative(used)
-      return { key, label: t(key), percent: percent(current, total), capacity: capacityLabel(current, total, multiplier) }
+      const unlimited = key === 'traffic' && total === null && current !== null
+      const capacity = capacityLabel(current, total, multiplier) + (unlimited ? ' / ∞' : '')
+      return { key, label: t(key), percent: percent(current, total), capacity, unlimited }
     }
   )].filter(metric => metric.percent !== null || metric.capacity)
 })
@@ -67,6 +69,8 @@ const boot = computed(() => {
     days: uptimeDays(timestamp, online.value ? props.now : epochMillis(server.value.last_updated))
   }
 })
+const uptime = computed(() => boot.value?.days == null ? '' : t('days', { days: boot.value.days }))
+const uptimeTitle = computed(() => t(online.value ? 'uptime' : 'uptimeAtLastReport'))
 const directions = computed(() => {
   const data = server.value
   const total = value => showTraffic.value ? transferValue(value) : null
@@ -127,12 +131,13 @@ function progress(value) {
     <header class="aqua-server-header">
       <h2><RouterLink class="aqua-server-link" :to="route" :title="server.name || String(server.id)">{{ server.name || server.id }}</RouterLink></h2>
       <span class="aqua-status"><i class="aqua-lamp" :class="{ 'is-offline': !online }"></i>{{ t(online ? 'online' : 'offline') }}</span>
-      <div v-if="metadata.length" class="aqua-server-tags">
+      <div v-if="metadata.length || agent" class="aqua-server-tags">
         <span v-for="(item, index) in metadata" :key="item.key" class="aqua-meta-item">
           <span v-if="index > 0 && item.className !== 'aqua-ip-tag' && metadata[index - 1].className !== 'aqua-ip-tag'"
             class="aqua-meta-separator" aria-hidden="true">|</span>
           <span class="aqua-meta-value" :class="item.className" :title="item.title">{{ item.text }}</span>
         </span>
+        <span v-if="agent" class="aqua-meta-value aqua-agent" :title="t('agent_version') + ' · ' + agent">{{ agent }}</span>
       </div>
       <p v-if="architecture || location" class="aqua-server-location">
         <span v-if="architecture" class="aqua-arch" :title="t('architecture') + ' ' + architecture">{{ architecture }}</span>
@@ -146,7 +151,12 @@ function progress(value) {
           <span>{{ metric.label }}</span>
           <span v-if="metric.percent !== null" class="aqua-track" aria-hidden="true"><i :style="{ width: progress(metric.percent) }"></i></span>
           <b v-if="metric.percent !== null" class="aqua-measure-value">{{ percentLabel(metric.percent) }}</b>
-          <span v-if="metric.capacity" class="aqua-measure-capacity" :class="{ 'aqua-cpu-capacity': metric.key === 'cpu' }" :title="metric.capacity">
+          <span v-if="metric.capacity || (metric.key === 'cpu' && uptime)" class="aqua-measure-capacity"
+            :class="{ 'aqua-cpu-capacity': metric.key === 'cpu' }"
+            :title="metric.unlimited ? metric.capacity.replace('∞', t('unlimited')) : metric.capacity"
+          >
+            <span v-if="metric.key === 'cpu' && uptime" class="aqua-uptime" :title="uptimeTitle"
+            ><span class="aqua-sr-only">{{ t('uptime') }} </span>{{ uptime }}</span>
             <img v-if="metric.key === 'cpu' && osIcon && osIcon !== failedOSIcon" :key="osIcon" :src="osIcon"
               class="aqua-os-icon" :title="server.os" alt="" loading="lazy" decoding="async" @error="failedOSIcon = $event.currentTarget.src"
             >
@@ -163,9 +173,8 @@ function progress(value) {
             <dt class="aqua-sr-only">{{ t('boot') }}</dt>
             <dd>
               <time :datetime="boot.iso">{{ boot.label }}</time>
-              <span v-if="boot.days !== null" class="aqua-uptime"
-                :title="t(online ? 'uptime' : 'uptimeAtLastReport')"
-              ><span class="aqua-sr-only">{{ t('uptime') }} </span>{{ t('days', { days: boot.days }) }}</span>
+              <span v-if="uptime && metrics[0]?.key !== 'cpu'" class="aqua-uptime" :title="uptimeTitle"
+              ><span class="aqua-sr-only">{{ t('uptime') }} </span>{{ uptime }}</span>
             </dd>
           </div>
         </dl>

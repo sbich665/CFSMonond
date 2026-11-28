@@ -180,6 +180,16 @@ test('overview counts online stacks separately and sums reported rates and visib
   assert.equal(overviewStats(entries, instant + 300_000).download, 0)
 })
 
+test('overview traffic rows retain measured usage without a configured quota', () => {
+  const usage = { net_rx_monthly: 2048, net_tx_monthly: '512' }
+  for (const [type, used] of [['total', 2560], ['dl', 2048], ['ul', 512], ['max', 2048]]) {
+    assert.deepEqual(capacityRows({ ...usage, traffic_limit: '0', traffic_calc_type: type }).at(-1), ['traffic', used, null, 1])
+  }
+  assert.deepEqual(capacityRows({ net_rx_monthly: 0, net_tx_monthly: 0 }).at(-1), ['traffic', 0, null, 1])
+  assert.equal(capacityRows({ traffic_limit: '', net_rx_monthly: 2048 }).some(([key]) => key === 'traffic'), false)
+  assert.equal(capacityRows({ traffic_calc_type: 'dl', net_rx_monthly: -1 }).some(([key]) => key === 'traffic'), false)
+})
+
 test('overview probe windows keep real timestamps, gaps and zero readings', () => {
   const later = instant + 420_000
   const latest = instant + 720_000
