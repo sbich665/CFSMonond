@@ -21,6 +21,7 @@ const MiB = 1024 ** 2
 const GiB = 1024 ** 3
 const DAY = 86_400_000
 const formatNumber = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 })
+const compactNumber = new Intl.NumberFormat(undefined, { maximumSignificantDigits: 3, useGrouping: false })
 const formatTime = new Intl.DateTimeFormat('sv-SE', {
   year: 'numeric', month: '2-digit', day: '2-digit',
   hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
@@ -57,12 +58,50 @@ export function format(value, suffix = '') {
     : (typeof value === 'number' ? formatNumber.format(value) : value) + suffix
 }
 
-export function bytes(value, suffix = '') {
+export function bytes(value, suffix = '', compact = false) {
   const count = number(value)
   if (count === null) return '—'
   const size = Math.abs(count)
   const index = size >= 1024 ? Math.min(4, Math.floor(Math.log(size) / Math.log(1024))) : 0
-  return formatNumber.format(count / 1024 ** index) + ' ' + ['B', 'KiB', 'MiB', 'GiB', 'TiB'][index] + suffix
+  const formatter = compact ? compactNumber : formatNumber
+  return formatter.format(count / 1024 ** index) + ' ' + ['B', 'KiB', 'MiB', 'GiB', 'TiB'][index] + suffix
+}
+
+export function hasIpVersion(server, version) {
+  return server['ip_v' + version] === '1'
+}
+
+function addReportedBytes(total, value) {
+  const count = number(value)
+  return count !== null && count >= 0 ? (total ?? 0) + count : total
+}
+
+export function overviewStats(entries, now) {
+  const stats = {
+    total: entries.length, online: 0, ipv4Only: 0, ipv6Only: 0, dualStack: 0,
+    download: null, upload: null, bootTraffic: null, periodTraffic: null
+  }
+  for (const { row, site } of entries) {
+    if (isOnline(row, now)) {
+      stats.online += 1
+      const v4 = hasIpVersion(row, 4)
+      const v6 = hasIpVersion(row, 6)
+      if (v4 && v6) stats.dualStack += 1
+      else if (v4) stats.ipv4Only += 1
+      else if (v6) stats.ipv6Only += 1
+      stats.download = addReportedBytes(stats.download, row.net_in_speed)
+      stats.upload = addReportedBytes(stats.upload, row.net_out_speed)
+    }
+    if (site.list?.sysConfig?.show_tf !== false) {
+      stats.bootTraffic = addReportedBytes(addReportedBytes(stats.bootTraffic, row.net_rx), row.net_tx)
+      stats.periodTraffic = addReportedBytes(addReportedBytes(stats.periodTraffic, row.net_rx_monthly), row.net_tx_monthly)
+    }
+  }
+  if (stats.total && !stats.online) {
+    stats.download = 0
+    stats.upload = 0
+  }
+  return stats
 }
 
 export function percent(used, total) {

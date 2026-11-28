@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import FieldPanel from '../components/FieldPanel.vue'
+import LiveStatus from '../components/LiveStatus.vue'
 import MetricsChart from '../components/MetricsChart.vue'
 import { useMonitor, canRead } from '../composables/useMonitor.js'
 import { createBatchBuffer, useConnections, usePageActivity } from '../composables/usePageActivity.js'
@@ -26,7 +27,7 @@ const currentError = ref(site ? '' : t('loadError'))
 const historyError = ref('')
 const fetchingHistory = ref(false)
 const range = ref(0.167)
-const { states, connect, disconnect } = useConnections()
+const { states, connect, disconnect, stayDisconnected } = useConnections()
 const socketState = computed(() => states.get(site?.index))
 const canUseRange = computed(() => HOURS.filter(hours => hours <= 24 || site?.config?.authorization === true))
 const online = computed(() => server.value ? isOnline(server.value, now.value) : false)
@@ -269,10 +270,7 @@ const charts = computed(() => {
         <RouterLink class="aqua-button" :to="{ name: 'dashboard' }">{{ t('back') }}</RouterLink>
       </div>
     </div>
-    <p v-if="socketState && socketState !== 'live'" class="aqua-state" role="status">
-      {{ t(socketState) }}
-      <button v-if="socketState === 'paused'" class="aqua-button" type="button" @click="subscribe(true)">{{ t('continue') }}</button>
-    </p>
+    <LiveStatus :state="socketState" @resume="subscribe(true)" @stay-disconnected="stayDisconnected(site, id)" />
     <section class="aqua-panel aqua-history">
       <div class="aqua-panel-heading">
         <h2>{{ t('history') }}</h2>

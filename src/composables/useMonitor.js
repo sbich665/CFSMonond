@@ -6,7 +6,7 @@ export const MonitorKey = Symbol('monitor')
 
 export function createMonitor(runtime) {
   const challenges = shallowRef([])
-  const paused = new Set()
+  const paused = new Map()
   const themeOptions = shallowRef(normalizeThemeOptions())
   let redirected = false
 

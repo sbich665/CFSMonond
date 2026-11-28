@@ -44,7 +44,7 @@ export function useConnections() {
     if (document.hidden || stops.has(key)) return
     if (userInitiated) paused.delete(key)
     if (paused.has(key)) {
-      states.set(site.index, 'paused')
+      states.set(site.index, paused.get(key))
       return
     }
     if (scope === 'all' && !ids.length) {
@@ -53,19 +53,29 @@ export function useConnections() {
     }
     const stop = openLive({
       base: site.base, scope, ids, jwt: site.api.jwt,
-      timeoutMinutes: Number(site.config?.frontend_ws_timeout_minutes),
+      timeoutMinutes: site.config?.frontend_ws_timeout_minutes,
       onBatch: consume,
-      onStatus: state => states.set(site.index, state === 'live' && ids.length > ID_LIMIT ? 'limited' : state),
+      onStatus(state) {
+        if (state === 'disconnected') stops.delete(key)
+        states.set(site.index, state === 'live' && ids.length > ID_LIMIT ? 'limited' : state)
+      },
       onTimeout() {
         stops.delete(key)
-        paused.add(key)
+        paused.set(key, 'paused')
         states.set(site.index, 'paused')
       }
     })
     stops.set(key, stop)
   }
 
-  return { states, connect, disconnect }
+  function stayDisconnected(site, scope) {
+    const key = site.index + ':' + scope
+    if (paused.get(key) !== 'paused') return
+    paused.set(key, 'stopped')
+    states.set(site.index, 'stopped')
+  }
+
+  return { states, connect, disconnect, stayDisconnected }
 }
 
 export function createBatchBuffer(flush) {

@@ -1,5 +1,7 @@
 <script setup>
 import { computed, ref, watch, onUnmounted } from 'vue'
+import LiveStatus from '../components/LiveStatus.vue'
+import OverviewSummary from '../components/OverviewSummary.vue'
 import ServerCard from '../components/ServerCard.vue'
 import { useMonitor, canRead } from '../composables/useMonitor.js'
 import { createBatchBuffer, useConnections, usePageActivity } from '../composables/usePageActivity.js'
@@ -18,7 +20,7 @@ const { sites, entries, login, list, themeOptions } = useMonitor()
 const { t } = useLabels()
 const search = ref('')
 const now = ref(Date.now())
-const { states, connect, disconnect } = useConnections()
+const { states, connect, disconnect, stayDisconnected } = useConnections()
 let alive = true
 let clock
 
@@ -28,9 +30,6 @@ const filtered = computed(() => {
   return entries.value.filter(({ row }) => (!filter || fieldText(row[filter.field]) === filter.name) &&
     [row.name, row.region, row.server_group, row.os, row.tags].some(value => String(value ?? '').toLowerCase().includes(query)))
 })
-const totals = computed(() => Object.fromEntries(['total', 'online', 'offline'].map(key => [
-  key, sites.reduce((sum, site) => sum + (Number(site.list?.stats?.[key]) || 0), 0)
-])))
 const loading = computed(() => sites.some(site => Boolean(site.listInFlight)))
 
 function updateClock() {
@@ -112,15 +111,7 @@ onUnmounted(() => { alive = false })
       <input v-model="search" class="aqua-search" type="search" :placeholder="t('search')" :aria-label="t('search')">
     </div>
   </div>
-  <div class="aqua-overview-summary">
-    <dl class="aqua-ribbon aqua-totals">
-      <div v-for="key of ['total', 'online', 'offline']" :key="key">
-        <dt><i class="aqua-lamp" :class="{ 'is-blue': key === 'total', 'is-offline': key === 'offline' }"></i> {{ t(key) }}</dt>
-        <dd>{{ totals[key] }}</dd>
-      </div>
-    </dl>
-    <div v-for="slot in 2" :key="slot" class="aqua-summary-spare" aria-hidden="true"></div>
-  </div>
+  <OverviewSummary :now="now" />
   <template v-for="site of sites" :key="site.index">
     <p v-if="site.configError || site.listError" class="aqua-state" role="alert">
       {{ site.base }} · {{ t('loadError') }} · {{ t((site.configError || site.listError).message) }}
@@ -128,10 +119,9 @@ onUnmounted(() => { alive = false })
     <p v-else-if="site.config && !canRead(site)" class="aqua-state">
       {{ site.base }} · {{ t('loginRequired') }} <a v-if="themeOptions.show_admin_link" :href="adminUrl(site.base)">{{ t('admin') }}</a>
     </p>
-    <p v-else-if="states.has(site.index) && !['live', 'idle'].includes(states.get(site.index))" class="aqua-state" role="status">
-      {{ sites.length > 1 ? site.base + ' · ' : '' }}{{ t(states.get(site.index)) }}
-      <button v-if="states.get(site.index) === 'paused'" class="aqua-button" type="button" @click="subscribe(site, true)">{{ t('continue') }}</button>
-    </p>
+    <LiveStatus v-else :state="states.get(site.index)" :source="sites.length > 1 ? site.base : ''"
+      @resume="subscribe(site, true)" @stay-disconnected="stayDisconnected(site, 'all')"
+    />
   </template>
   <p v-if="loading && !entries.length" class="aqua-state" role="status">{{ t('loading') }}</p>
   <p v-else-if="!filtered.length" class="aqua-empty">{{ t('empty') }}</p>

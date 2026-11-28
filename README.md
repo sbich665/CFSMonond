@@ -2,6 +2,10 @@
 
 CFSMonond 是一个采用银蓝 Aqua 风格的 CF-Server-Monitor 第三方主题。它使用 Vue 3、Vite 和 hash 路由。首页位于 `/#/`，单机详情位于 `/#/server/:id`。
 
+## 全局设计要求
+
+总览、详情、主题设置和共用控件统一以 OS X Mountain Lion（10.8）和 iOS 6 的拟物设计为标准，使用立体的窗口边缘、带高光的控件和内凹的分组数据框。
+
 ## 本地构建
 
 ```sh

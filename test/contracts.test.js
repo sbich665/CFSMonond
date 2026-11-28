@@ -3,7 +3,8 @@ import test from 'node:test'
 import { createApi } from '../src/utils/api.js'
 import { adminUrl, normalizeThemeOptions } from '../src/utils/config.js'
 import { openLive, socketUrl, subscribedIds } from '../src/utils/live.js'
-import { capacityLabel, capacityRows, expiryInfo, latestPatch, probeRows } from '../src/utils/metrics.js'
+import { capacityLabel, capacityRows, expiryInfo, latestPatch, overviewStats, probeRows } from '../src/utils/metrics.js'
+import { osIconUrl } from '../src/utils/osIcon.js'
 
 const base = 'https://test-worker.example'
 const instant = Date.parse('2026-11-27T06:30:00Z')
@@ -157,6 +158,33 @@ test('incremental batches retain report fields and distinguish unavailable, time
   assert.equal(expiryInfo('2027-02-30'), null)
 })
 
+test('overview counts online stacks separately and sums reported rates and visible traffic', () => {
+  const visible = { list: { sysConfig: { show_tf: true } } }
+  const hidden = { list: { sysConfig: { show_tf: false } } }
+  const entries = [
+    { site: visible, row: { last_updated: instant, ip_v4: '1', ip_v6: '1', net_in_speed: '256', net_out_speed: 0, net_rx: 90, net_tx: 10, net_rx_monthly: 120 } },
+    { site: visible, row: { last_updated: instant, ip_v4: '1', ip_v6: '0', net_in_speed: null, net_out_speed: 12, net_rx: 0, net_tx: -1, net_tx_monthly: 0 } },
+    { site: hidden, row: { last_updated: instant, ip_v4: '0', ip_v6: '1', net_in_speed: 50, net_out_speed: -2, net_rx: 1000, net_tx_monthly: 1000 } },
+    { site: visible, row: { last_updated: instant - 300_000, ip_v4: '1', net_in_speed: 999, net_out_speed: 999, net_rx: 40, net_tx_monthly: 30 } }
+  ]
+  assert.deepEqual(overviewStats(entries, instant), {
+    total: 4, online: 3, ipv4Only: 1, ipv6Only: 1, dualStack: 1,
+    download: 306, upload: 12, bootTraffic: 140, periodTraffic: 150
+  })
+  const missing = overviewStats([{ site: visible, row: { last_updated: instant } }], instant)
+  assert.equal(missing.download, null)
+  assert.equal(missing.bootTraffic, null)
+  assert.equal(missing.periodTraffic, null)
+  assert.equal(overviewStats(entries, instant + 300_000).download, 0)
+})
+
+test('OS logos use the reporting Worker and published asset names', () => {
+  assert.equal(osIconUrl('openSUSE Leap 15.6', base), base + '/os-icons/os-openSUSE.svg')
+  assert.equal(osIconUrl('Kali GNU/Linux', base), base + '/os-icons/os-kail.svg')
+  assert.equal(osIconUrl('Proxmox VE (Debian GNU/Linux)', base), base + '/os-icons/os-proxmox.ico')
+  assert.equal(osIconUrl('  ', base), '')
+})
+
 test('WS subscriptions use the IDs of one origin, and detail omits the all subscription command', () => {
   class Socket extends EventTarget {
     static connections = []
@@ -188,7 +216,7 @@ test('WS timeout pauses explicitly and reconnect delay doubles on unexpected clo
   const connections = []
   class Socket extends EventTarget {
     constructor() { super(); connections.push(this) }
-    close() { this.closed = true; this.dispatchEvent(new Event('close')) }
+    close(...args) { this.closed = true; this.closeArgs = args; this.dispatchEvent(new Event('close')) }
   }
   let prompted = 0
   const common = {
@@ -200,6 +228,7 @@ test('WS timeout pauses explicitly and reconnect delay doubles on unexpected clo
   t.mock.timers.tick(60_000)
   assert.equal(prompted, 1)
   assert.equal(connections[0].closed, true)
+  assert.deepEqual(connections[0].closeArgs, [1000, 'connection lifetime exceeded'])
   t.mock.timers.tick(60_000)
   assert.equal(connections.length, 1)
   stop()
@@ -216,4 +245,39 @@ test('WS timeout pauses explicitly and reconnect delay doubles on unexpected clo
   t.mock.timers.tick(1)
   assert.equal(connections.length, 4)
   retry()
+})
+
+test('WS backoff caps at 30 seconds and ten retries even after short-lived handshakes', t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const connections = []
+  const states = []
+  class Socket extends EventTarget {
+    constructor() { super(); connections.push(this) }
+    close() { this.dispatchEvent(new Event('close')) }
+  }
+  const options = {
+    base, pageOrigin: base, Socket, scope: 'sg-01', jwt: () => '', timeoutMinutes: 0,
+    onBatch() {}, onStatus(state) { states.push(state) }, onTimeout() { assert.fail('Unexpected lifetime limit') }
+  }
+  const stop = openLive(options)
+  const delays = [1000, 2000, 4000, 8000, 16000, 30_000, 30_000, 30_000, 30_000, 30_000]
+  for (const [index, delay] of delays.entries()) {
+    connections.at(-1).dispatchEvent(new Event('open'))
+    connections.at(-1).dispatchEvent(new Event('error'))
+    t.mock.timers.tick(delay - 1)
+    assert.equal(connections.length, index + 1)
+    t.mock.timers.tick(1)
+    assert.equal(connections.length, index + 2)
+  }
+  connections.at(-1).dispatchEvent(new Event('close'))
+  assert.equal(states.at(-1), 'disconnected')
+  t.mock.timers.tick(60_000)
+  assert.equal(connections.length, 11)
+  stop()
+
+  const cancelPending = openLive(options)
+  connections.at(-1).dispatchEvent(new Event('close'))
+  cancelPending()
+  t.mock.timers.tick(30_000)
+  assert.equal(connections.length, 12)
 })

@@ -22,14 +22,17 @@ body {
   --aqua-muted: #49596c;
   --aqua-line: #bac3ce;
   --aqua-blue: #0755bc;
-  --aqua-chrome-edge: #738397;
-  --aqua-chrome-seam: #929eac;
-  --aqua-chrome-shadow: #344c6848;
+  --aqua-chrome-edge: #687b91;
+  --aqua-chrome-seam: #7a899c;
+  --aqua-chrome-shadow: #30476562;
+  --aqua-rim-light: #fffffff0;
+  --aqua-rim-side: #e1ecf8b5;
+  --aqua-rim-bottom: #596d87a6;
   --aqua-metal-grain: repeating-linear-gradient(0deg, #fff2 0 1px, #3543540a 1px 2px, transparent 2px 3px);
-  --aqua-titlebar: var(--aqua-metal-grain), radial-gradient(ellipse at 45% 0, #fff8, transparent 68%),
-    linear-gradient(#f6f8fa, #dee3e9 51%, #c2cbd6);
+  --aqua-titlebar: var(--aqua-metal-grain), radial-gradient(ellipse at 43% 0, #fff9, transparent 72%),
+    linear-gradient(#fbfcfd, #eef2f6 16%, #dfe5ec 47%, #c4cedb 89%, #aebbcd);
   --aqua-bottom-bar: var(--aqua-metal-grain), linear-gradient(#e5eaf0, #c9d2dd 53%, #afbdcd);
-  --aqua-content: linear-gradient(#dbe2ea, #edf1f5 9rem, #e5ebf2);
+  --aqua-content: linear-gradient(#cfd9e5, #e4ebf3 3.8rem, #edf1f5 9rem, #e5ebf2);
   --aqua-surface: linear-gradient(#fff, #f4f6f8 32%, #e4e9ef);
   --aqua-surface-rim: linear-gradient(#fafbfc, #c2cbd6 54%, #8997a8);
   --aqua-surface-shadow: inset 0 1px #fff, 0 0 0 1px #a0adbb, 0 2px 4px #27354838;
@@ -66,7 +69,7 @@ body {
 #cfs-aqua :is(button, input, select, a):focus-visible { outline: 2px solid var(--aqua-blue); outline-offset: 2px; }
 #cfs-aqua .aqua-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 #cfs-aqua :is(
-  .aqua-panel, .aqua-setting-panel, .aqua-chart-panel, .aqua-sample, .aqua-ribbon,
+  .aqua-panel, .aqua-setting-panel, .aqua-chart-panel, .aqua-sample, .aqua-summary-panel,
   .aqua-button, .aqua-range, .aqua-status, .aqua-arch, .aqua-ip-tag, .aqua-group-tag
 ) {
   --aqua-face: var(--aqua-surface);
@@ -78,13 +81,13 @@ body {
   box-shadow: var(--aqua-surface-shadow);
 }
 #cfs-aqua :is(.aqua-button, .aqua-range, .aqua-status, .aqua-arch, .aqua-group-tag) { --aqua-face: var(--aqua-control); }
-#cfs-aqua :is(.aqua-panel, .aqua-setting-panel, .aqua-chart-panel, .aqua-sample, .aqua-ribbon) {
+#cfs-aqua :is(.aqua-panel, .aqua-setting-panel, .aqua-chart-panel, .aqua-sample, .aqua-summary-panel) {
   border-color: transparent;
   background: var(--aqua-face) padding-box, var(--aqua-surface-rim) border-box;
 }
 #cfs-aqua :is(
   .aqua-server-usage, .aqua-server-network, .aqua-card-probes,
-  .aqua-search, .aqua-trend, .aqua-probes, .aqua-fields, .aqua-setting-fields, .aqua-summary-spare
+  .aqua-search, .aqua-trend, .aqua-probes, .aqua-fields, .aqua-setting-fields
 ) {
   min-width: 0;
   border: 1px solid transparent;
@@ -99,17 +102,21 @@ body {
   border: 1px solid var(--aqua-chrome-edge);
   border-radius: clamp(.65rem, 1.1cqi, 1.15rem);
   background: var(--aqua-content);
-  box-shadow: 0 0 0 1px var(--aqua-glint), 0 .2em .45em #1d314c35, 0 1.1em 2.8em var(--aqua-chrome-shadow);
+  box-shadow: 0 0 0 1px var(--aqua-rim-side), 0 .32em .75em #1d314c4d, 0 1.12em 2.85em var(--aqua-chrome-shadow);
 }
 #cfs-aqua .aqua-window::after {
   content: "";
   position: absolute;
+  z-index: 2;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 1px 0 var(--aqua-glint), inset -1px 0 var(--aqua-glint), inset 0 1px var(--aqua-glint);
+  box-shadow: inset 0 1px var(--aqua-rim-light), inset 1px 0 var(--aqua-rim-side), inset -1px 0 var(--aqua-rim-side),
+    inset 0 -1px var(--aqua-rim-bottom), inset 0 0 0 2px var(--aqua-rim-side);
   pointer-events: none;
 }
 #cfs-aqua .aqua-toolbar {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
@@ -118,7 +125,8 @@ body {
   padding: var(--aqua-gutter) var(--aqua-main-padding);
   border-bottom: 1px solid var(--aqua-chrome-seam);
   background: var(--aqua-titlebar);
-  box-shadow: inset 0 1px var(--aqua-glint);
+  box-shadow: inset 0 1px var(--aqua-rim-light), inset 0 -1px var(--aqua-rim-side),
+    0 1px var(--aqua-glint), 0 .36em .76em -.42em var(--aqua-chrome-shadow);
 }
 #cfs-aqua .aqua-brand {
   display: flex;
@@ -173,7 +181,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   background: var(--aqua-content);
-  box-shadow: inset 0 1px var(--aqua-glint), inset 0 .85em 1.2em -1.15em var(--aqua-chrome-shadow);
+  box-shadow: inset 0 .64em 1.18em -.76em var(--aqua-chrome-shadow);
 }
 #cfs-aqua .aqua-sidebar {
   flex: 1 0 min(100%, 19ch);
@@ -251,28 +259,46 @@ body {
   border-radius: 7px;
 }
 #cfs-aqua .aqua-overview-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--aqua-section-gap);
   margin-block-end: var(--aqua-section-gap);
 }
-#cfs-aqua .aqua-ribbon {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-evenly;
+#cfs-aqua .aqua-summary-panel {
   min-inline-size: 0;
-  max-inline-size: 100%;
-  padding: var(--aqua-control-pad) var(--aqua-gutter);
-  gap: var(--aqua-column-gap);
+  overflow: hidden;
   border-radius: .65em;
+  font-size: clamp(.64rem, .59rem + .23cqi, .8rem);
 }
-#cfs-aqua .aqua-ribbon > div {
-  display: flex;
-  align-items: baseline;
-  gap: var(--aqua-column-gap);
+#cfs-aqua .aqua-summary-panel h2 {
+  padding: calc(var(--aqua-control-pad) / 1.25) var(--aqua-gutter);
+  background: var(--aqua-control);
+  border-bottom: 1px solid var(--aqua-line);
+  box-shadow: inset 0 1px var(--aqua-glint);
+  font-size: 1.08em;
+}
+#cfs-aqua .aqua-summary-panel h2, #cfs-aqua .aqua-summary-fields :is(dt, dd) {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-#cfs-aqua .aqua-summary-spare { min-block-size: calc(1lh + var(--aqua-control-pad)); }
-#cfs-aqua .aqua-ribbon dt { color: var(--aqua-muted); font-size: .9em; }
-#cfs-aqua .aqua-ribbon dd { font-size: 1.27em; font-weight: 750; }
+#cfs-aqua :is(.aqua-summary-fields, .aqua-summary-empty) { padding: var(--aqua-control-pad) var(--aqua-gutter); }
+#cfs-aqua .aqua-summary-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14ch), 1fr));
+  gap: .08em var(--aqua-column-gap);
+}
+#cfs-aqua .aqua-summary-fields + .aqua-summary-fields { box-shadow: var(--aqua-rule); }
+#cfs-aqua .aqua-summary-fields > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: .45em;
+  min-inline-size: 0;
+}
+#cfs-aqua :is(.aqua-summary-fields dt, .aqua-summary-empty) { color: var(--aqua-muted); }
+#cfs-aqua .aqua-summary-fields dd { font-weight: 700; }
 #cfs-aqua .aqua-lamp {
   display: inline-block;
   width: 9px;
@@ -286,12 +312,12 @@ body {
 }
 #cfs-aqua .aqua-lamp.is-blue { border-color: #1d5cbb; background: radial-gradient(circle at 37% 26%, #f1faff, #56c4ff 42%, #225bc7 85%); }
 #cfs-aqua .aqua-lamp.is-offline { border-color: #9c2533; background: radial-gradient(circle at 37% 26%, #fff2ef, #f96567 43%, #bb2333 80%); box-shadow: 0 0 3px #9b26384d; }
-#cfs-aqua :is(.aqua-overview-summary, .aqua-server-grid, .aqua-field-panels) {
+#cfs-aqua :is(.aqua-server-grid, .aqua-field-panels) {
   display: grid;
   gap: var(--aqua-section-gap);
   align-items: stretch;
 }
-#cfs-aqua :is(.aqua-overview-summary, .aqua-server-grid) {
+#cfs-aqua .aqua-server-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--aqua-card-min)), 1fr));
 }
 #cfs-aqua .aqua-field-panels {
@@ -313,7 +339,7 @@ body {
   flex: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto minmax(1.35em, auto);
+  grid-template-rows: auto auto minmax(1.35em, auto);
   align-items: center;
   gap: calc(var(--aqua-column-gap) / 2) var(--aqua-column-gap);
   margin: var(--aqua-gutter) var(--aqua-gutter) 0;
@@ -328,7 +354,7 @@ body {
 #cfs-aqua .aqua-server-tags {
   display: flex;
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 2;
   align-items: center;
   gap: var(--aqua-column-gap);
   min-inline-size: 0;
@@ -351,7 +377,7 @@ body {
 }
 #cfs-aqua .aqua-group-tag {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 3;
   justify-self: end;
   max-inline-size: min(40cqi, 16ch);
   font-size: var(--aqua-reading-size);
@@ -386,7 +412,7 @@ body {
 #cfs-aqua .aqua-server-location {
   display: flex;
   grid-column: 1;
-  grid-row: 2;
+  grid-row: 3;
   align-items: center;
   gap: var(--aqua-column-gap);
   min-width: 0;
@@ -440,6 +466,21 @@ body {
   color: var(--aqua-muted);
   font-size: .92em;
   line-height: 1.15;
+}
+#cfs-aqua .aqua-cpu-capacity {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: calc(var(--aqua-column-gap) / 1.5);
+  max-height: none;
+  white-space: nowrap;
+}
+#cfs-aqua .aqua-os-icon {
+  flex: none;
+  inline-size: 1.16em;
+  block-size: 1.16em;
+  object-fit: contain;
+  filter: drop-shadow(0 1px .09em #182d4440);
 }
 #cfs-aqua .aqua-track {
   grid-column: 2;
@@ -698,6 +739,14 @@ body {
 #cfs-aqua .aqua-state { padding-block: var(--aqua-section-gap); overflow-wrap: anywhere; }
 #cfs-aqua > .aqua-window > .aqua-state { padding-inline: var(--aqua-main-padding); }
 #cfs-aqua .aqua-state a { color: var(--aqua-blue); }
+#cfs-aqua .aqua-live-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--aqua-column-gap);
+}
+#cfs-aqua .aqua-live-prompt { padding-inline: var(--aqua-gutter); margin-block: var(--aqua-section-gap); }
 #cfs-aqua .aqua-history-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 45ch), 1fr)); gap: var(--aqua-section-gap); }
 #cfs-aqua .aqua-chart-panel { display: flex; flex-direction: column; min-width: 0; padding: var(--aqua-gutter); border-radius: 8px; }
 
@@ -713,14 +762,17 @@ html[data-theme="dark"] {
   --aqua-muted: #bac7d7;
   --aqua-line: #526073;
   --aqua-blue: #8dc6ff;
-  --aqua-chrome-edge: #152334;
-  --aqua-chrome-seam: #192534;
-  --aqua-chrome-shadow: #111925a3;
+  --aqua-chrome-edge: #111d2c;
+  --aqua-chrome-seam: #111d2b;
+  --aqua-chrome-shadow: #080f19c3;
+  --aqua-rim-light: #d1e3f67a;
+  --aqua-rim-side: #a8bbd037;
+  --aqua-rim-bottom: #070f1bba;
   --aqua-metal-grain: repeating-linear-gradient(0deg, #adbbcc0e 0 1px, #0e15210e 1px 2px, transparent 2px 3px);
-  --aqua-titlebar: var(--aqua-metal-grain), radial-gradient(ellipse at 45% 0, #bfd1e027, transparent 68%),
-    linear-gradient(#546374, #3e4c5d 51%, #303d4d);
+  --aqua-titlebar: var(--aqua-metal-grain), radial-gradient(ellipse at 43% 0, #c1d5ec36, transparent 72%),
+    linear-gradient(#667587, #57667a 16%, #415066 47%, #303d50 89%, #29374a);
   --aqua-bottom-bar: var(--aqua-metal-grain), linear-gradient(#3a495a, #303e4f 53%, #232f40);
-  --aqua-content: linear-gradient(#263141, #2b3748 9rem, #263243);
+  --aqua-content: linear-gradient(#202d3f, #2b384a 3.8rem, #2b3748 9rem, #263243);
   --aqua-surface: linear-gradient(#4a5869, #3b495b 32%, #2c3849);
   --aqua-surface-rim: linear-gradient(#8c98a7, #5c6b7d 56%, #263344);
   --aqua-surface-shadow: inset 0 1px #e4edf726, 0 0 0 1px #1c2531, 0 2px 4px #10172266;

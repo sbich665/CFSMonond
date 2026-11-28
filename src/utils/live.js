@@ -1,4 +1,7 @@
-const MAX_RETRIES = 6
+const MAX_RETRIES = 10
+const FIRST_RETRY_MS = 1000
+const MAX_RETRY_MS = 30_000
+const MAX_LIFETIME_MINUTES = 1440
 export const ID_LIMIT = 500
 const ID = /^[A-Za-z0-9._:-]{1,64}$/
 
@@ -23,6 +26,8 @@ export function openLive({
   let timeout
   let stopped = false
   let attempts = 0
+  const minutes = Number(timeoutMinutes)
+  const lifetime = Number.isInteger(minutes) && minutes > 0 && minutes <= MAX_LIFETIME_MINUTES ? minutes * 60_000 : 0
   if (scope === 'all' && !ids.length) return () => {}
 
   function retry() {
@@ -31,23 +36,27 @@ export function openLive({
       onStatus('disconnected')
       return
     }
-    const delay = Math.min(30_000, 1000 * 2 ** attempts)
+    const delay = Math.min(MAX_RETRY_MS, FIRST_RETRY_MS * 2 ** attempts)
     attempts += 1
     onStatus('reconnecting')
     retryTimer = setTimeout(connect, delay)
   }
 
-  function stop() {
+  function stop(reason) {
     stopped = true
     clearTimeout(retryTimer)
     clearTimeout(timeout)
-    socket?.close()
+    const current = socket
+    socket = undefined
+    if (reason) current?.close(1000, reason)
+    else current?.close()
   }
 
   function connect() {
     if (stopped) return
     onStatus('connecting')
     let current
+    let openedAt
     try {
       current = new Socket(socketUrl(base, scope, jwt(), pageOrigin))
       socket = current
@@ -58,15 +67,20 @@ export function openLive({
 
     current.addEventListener('open', () => {
       if (stopped || socket !== current) return
-      if (scope === 'all') {
-        current.send(JSON.stringify({ type: 'subscribe', scope: 'all', ids: ids.slice(0, ID_LIMIT) }))
+      openedAt = Date.now()
+      try {
+        if (scope === 'all') current.send(JSON.stringify({ type: 'subscribe', scope: 'all', ids: ids.slice(0, ID_LIMIT) }))
+      } catch {
+        current.close()
+        return
       }
       onStatus('live')
-      if (Number.isFinite(timeoutMinutes) && timeoutMinutes > 0) {
+      if (lifetime) {
         timeout = setTimeout(() => {
-          stop()
+          if (stopped || socket !== current) return
+          stop('connection lifetime exceeded')
           onTimeout()
-        }, Math.min(timeoutMinutes, 1440) * 60_000)
+        }, lifetime)
       }
     })
 
@@ -75,7 +89,7 @@ export function openLive({
       try {
         const message = JSON.parse(data)
         if (message.type === 'batchUpdate' && Array.isArray(message.updates)) {
-          attempts = 0
+          if (message.updates.length) attempts = 0
           onBatch(message.updates)
         }
       } catch {
@@ -85,9 +99,16 @@ export function openLive({
 
     current.addEventListener('close', ({ code }) => {
       if (stopped || socket !== current) return
+      socket = undefined
       clearTimeout(timeout)
+      // An immediate close after the handshake still counts toward the retry limit.
+      if (openedAt !== undefined && Date.now() - openedAt >= MAX_RETRY_MS) attempts = 0
       if (code === 1008) onStatus('disconnected')
       else retry()
+    })
+
+    current.addEventListener('error', () => {
+      if (!stopped && socket === current) current.close()
     })
   }
 

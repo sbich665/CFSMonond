@@ -1,11 +1,12 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ProbeMatrix from './ProbeMatrix.vue'
 import { useMonitor } from '../composables/useMonitor.js'
 import { useLabels } from '../utils/i18n.js'
-import { bytes, capacityLabel, capacityRows, epochMillis, expiryInfo, fieldText, format, isOnline,
+import { bytes, capacityLabel, capacityRows, epochMillis, expiryInfo, fieldText, format, hasIpVersion, isOnline,
   number, percent, percentLabel, probeRows, timeLabel } from '../utils/metrics.js'
+import { osIconUrl } from '../utils/osIcon.js'
 
 const props = defineProps({
   row: { type: Object, required: true },
@@ -18,13 +19,15 @@ const server = computed(() => props.row)
 const online = computed(() => isOnline(server.value, props.now))
 const switches = computed(() => props.site.list?.sysConfig ?? {})
 const showTraffic = computed(() => switches.value.show_tf !== false)
-const protocols = computed(() => [4, 6].filter(version => server.value['ip_v' + version] === '1'))
+const protocols = computed(() => [4, 6].filter(version => hasIpVersion(server.value, version)))
 const agentVersion = computed(() => fieldText(server.value.agent_version))
 const architecture = computed(() => fieldText(server.value.arch))
 const location = computed(() => [server.value.os, server.value.region].map(fieldText).filter(Boolean).join(' · '))
 const group = computed(() => fieldText(server.value.server_group))
 const loadAverage = computed(() => fieldText(server.value.load_avg))
 const kernel = computed(() => fieldText(server.value.kernel_version))
+const osIcon = computed(() => osIconUrl(server.value.os, props.site.base))
+const failedOSIcon = ref('')
 const route = computed(() => ({
   name: 'server', params: { id: String(server.value.id) },
   query: sites.length > 1 ? { site: String(props.site.index) } : undefined
@@ -112,23 +115,23 @@ function progress(value) {
     <header class="aqua-server-header">
       <h2><RouterLink class="aqua-server-link" :to="route" :title="server.name || String(server.id)">{{ server.name || server.id }}</RouterLink></h2>
       <span class="aqua-status"><i class="aqua-lamp" :class="{ 'is-offline': !online }"></i>{{ t(online ? 'online' : 'offline') }}</span>
-      <p v-if="architecture || location" class="aqua-server-location">
-        <span v-if="architecture" class="aqua-arch" :title="t('architecture') + ' ' + architecture">{{ architecture }}</span>
-        <span v-if="location" :title="location">{{ location }}</span>
-      </p>
-      <span v-if="group" class="aqua-group-tag" :title="t('server_group') + ' · ' + group">{{ group }}</span>
       <div v-if="protocols.length || agentVersion || loadAverage || kernel" class="aqua-server-tags">
         <span v-for="version in protocols" :key="version" class="aqua-ip-tag"
           :title="'IPv' + version + ' ' + t('reachable')"
         >v{{ version }}</span>
         <span v-if="agentVersion" class="aqua-agent" :title="t('agent') + ' · ' + agentVersion">{{ agentVersion }}</span>
         <span v-if="loadAverage" class="aqua-server-load" :title="t('load_avg') + ' · ' + loadAverage">
-          {{ t('loadAverageShort') }} <b>{{ loadAverage }}</b>
+          <b>{{ loadAverage }}</b>
         </span>
         <span v-if="kernel" class="aqua-server-kernel" :title="t('kernel_version') + ' · ' + kernel">
-          {{ t('kernelShort') }} <b>{{ kernel }}</b>
+          <b>{{ kernel }}</b>
         </span>
       </div>
+      <p v-if="architecture || location" class="aqua-server-location">
+        <span v-if="architecture" class="aqua-arch" :title="t('architecture') + ' ' + architecture">{{ architecture }}</span>
+        <span v-if="location" :title="location">{{ location }}</span>
+      </p>
+      <span v-if="group" class="aqua-group-tag" :title="t('server_group') + ' · ' + group">{{ group }}</span>
     </header>
     <div class="aqua-server-body">
       <div v-if="metrics.length" class="aqua-server-usage">
@@ -136,7 +139,12 @@ function progress(value) {
           <span>{{ metric.label }}</span>
           <span v-if="metric.percent !== null" class="aqua-track" aria-hidden="true"><i :style="{ width: progress(metric.percent) }"></i></span>
           <b v-if="metric.percent !== null" class="aqua-measure-value">{{ percentLabel(metric.percent) }}</b>
-          <span v-if="metric.capacity" class="aqua-measure-capacity" :title="metric.capacity">{{ capacityText(metric.capacity) }}</span>
+          <span v-if="metric.capacity" class="aqua-measure-capacity" :class="{ 'aqua-cpu-capacity': metric.key === 'cpu' }" :title="metric.capacity">
+            {{ capacityText(metric.capacity) }}
+            <img v-if="metric.key === 'cpu' && osIcon && osIcon !== failedOSIcon" :key="osIcon" :src="osIcon"
+              class="aqua-os-icon" :title="server.os" alt="" loading="lazy" decoding="async" @error="failedOSIcon = $event.currentTarget.src"
+            >
+          </span>
         </div>
       </div>
       <div v-if="hasNetwork" class="aqua-server-network">
