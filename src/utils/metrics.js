@@ -260,6 +260,38 @@ export function expiryInfo(value, now = Date.now()) {
   return { date, days: Math.round((expiry.getTime() - localDay) / DAY) }
 }
 
+function overviewSortValue({ row, site }, order, now) {
+  const switches = site.list?.sysConfig
+  switch (order) {
+    case 'trafficUsed':
+      return switches?.show_tf === false ? null : quotaUsage(row)
+    case 'trafficPercent':
+      return switches?.show_tf === false ? null : percent(quotaUsage(row), quotaBytes(row.traffic_limit))
+    case 'upload':
+    case 'download': {
+      if (!isOnline(row, now)) return null
+      const speed = number(order === 'upload' ? row.net_out_speed : row.net_in_speed)
+      return speed !== null && speed >= 0 ? speed : null
+    }
+    case 'expiry':
+      return switches?.show_expire === false ? null : expiryInfo(row.expire_date, now)?.days ?? null
+    default:
+      return null
+  }
+}
+
+export function sortOverviewEntries(entries, order, now) {
+  if (order === 'default') return entries
+  const direction = order === 'expiry' ? 1 : -1
+  return entries.map(entry => ({ entry, value: overviewSortValue(entry, order, now) }))
+    .sort((a, b) => {
+      if (a.value === b.value) return 0
+      if (a.value === null) return 1
+      if (b.value === null) return -1
+      return direction * (a.value - b.value)
+    }).map(({ entry }) => entry)
+}
+
 export function timeLabel(value, full = false) {
   const timestamp = epochMillis(value)
   if (timestamp === null) return '—'

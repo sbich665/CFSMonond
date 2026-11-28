@@ -1,6 +1,7 @@
 import { computed, inject, reactive, shallowReactive, shallowRef } from 'vue'
 import { createApi } from '../utils/api.js'
 import { adminUrl, normalizeThemeOptions } from '../utils/config.js'
+import { fieldText } from '../utils/metrics.js'
 
 export const MonitorKey = Symbol('monitor')
 
@@ -9,6 +10,7 @@ export function createMonitor(runtime) {
   const paused = new Map()
   const ratePeaks = shallowRef({ download: null, upload: null })
   const themeOptions = shallowRef(normalizeThemeOptions())
+  const overviewFilters = reactive({ server_group: null, region: null, order: 'default' })
   let redirected = false
 
   function login(base) {
@@ -46,6 +48,8 @@ export function createMonitor(runtime) {
     return site
   })
   const entries = computed(() => sites.flatMap(site => (site.list?.servers ?? []).map(row => ({ site, row }))))
+  const serverGroups = computed(() => [...new Set(entries.value.map(({ row }) => fieldText(row.server_group)))])
+  const serverRegions = computed(() => [...new Set(entries.value.map(({ row }) => fieldText(row.region)).filter(Boolean))].sort())
 
   async function bootstrap() {
     await Promise.all(sites.map(async site => {
@@ -78,7 +82,7 @@ export function createMonitor(runtime) {
     return request
   }
 
-  return { runtime, sites, entries, challenges, paused, ratePeaks, themeOptions, bootstrap, login, list }
+  return { runtime, sites, entries, serverGroups, serverRegions, overviewFilters, challenges, paused, ratePeaks, themeOptions, bootstrap, login, list }
 }
 
 export function useMonitor() {

@@ -31,7 +31,9 @@ const columns = computed(() => {
       <thead>
         <tr>
           <th scope="col"><span class="aqua-path-reading">{{ t('line') }}</span></th>
-          <th scope="col" class="aqua-path-delay"><span class="aqua-path-reading">{{ t(column.averages ? 'avgDelay' : 'delay') }}</span></th>
+          <th scope="col" class="aqua-path-delay" :class="{ 'is-average': column.averages }">
+            <span class="aqua-path-reading">{{ t(column.averages ? 'avgDelay' : 'delay') }}</span>
+          </th>
           <th scope="col"><span class="aqua-path-reading">{{ t('loss') }}</span></th>
         </tr>
       </thead>

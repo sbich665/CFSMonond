@@ -248,6 +248,25 @@ body {
   gap: var(--aqua-column-gap);
   max-width: 100%;
 }
+#cfs-aqua .aqua-overview-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--aqua-column-gap) / 1.5);
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+#cfs-aqua .aqua-overview-picker > span {
+  flex: none;
+  color: var(--aqua-muted);
+  font-size: .88em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+#cfs-aqua .aqua-overview-picker select {
+  min-inline-size: 0;
+  max-inline-size: min(23ch, 62cqi);
+  text-overflow: ellipsis;
+}
 #cfs-aqua h1 { font-size: clamp(22px, 3vw, 29px); line-height: 1.22; font-weight: 700; letter-spacing: -.025em; }
 #cfs-aqua h2 { font-size: 16px; line-height: 1.35; font-weight: 700; }
 #cfs-aqua h3 { font-size: 13px; line-height: 1.35; font-weight: 700; }
@@ -599,6 +618,7 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--aqua-probe-lane, 18ch)), 1fr));
 }
 #cfs-aqua .aqua-card-probes:has(.aqua-path-trends) { --aqua-probe-lane: 22ch; }
+#cfs-aqua .aqua-card-probes:has(.aqua-path-delay.is-average) { --aqua-probe-lane: 16.5em; }
 #cfs-aqua .aqua-path-table + .aqua-path-table { box-shadow: 0 0 0 1px var(--aqua-line); }
 #cfs-aqua .aqua-path-table tr > * {
   height: 2.27em;
@@ -616,30 +636,34 @@ body {
   overflow: hidden;
   line-height: 1.08;
 }
-#cfs-aqua .aqua-path-table th .aqua-path-reading { overflow-wrap: anywhere; }
+#cfs-aqua .aqua-path-table tbody th .aqua-path-reading { overflow-wrap: anywhere; }
 #cfs-aqua .aqua-path-table tr > :last-child { border-right: 0; }
 #cfs-aqua .aqua-path-table thead th {
   color: var(--aqua-muted);
   background: var(--aqua-control);
   font-weight: 600;
 }
+#cfs-aqua .aqua-path-table thead .aqua-path-reading { white-space: nowrap; }
 #cfs-aqua .aqua-path-table thead th:first-child { width: 33%; }
 #cfs-aqua .aqua-path-table thead .aqua-path-delay { width: 39%; }
 #cfs-aqua .aqua-path-trends thead th:first-child { width: 26%; }
 #cfs-aqua .aqua-path-trends thead .aqua-path-delay { width: 37%; }
+#cfs-aqua .aqua-path-table thead .aqua-path-delay.is-average { width: 41%; }
 #cfs-aqua .aqua-path-value.is-charted {
+  --aqua-probe-gap: clamp(.28em, .55cqi, .7em);
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(48%, 4em, 64%);
-  inline-size: min(100%, 9.25em);
+  inline-size: min(100%, calc(8em + var(--aqua-probe-gap)));
   margin-inline: auto;
   align-items: center;
-  column-gap: clamp(.28em, .55cqi, .7em);
+  column-gap: var(--aqua-probe-gap);
 }
 #cfs-aqua .aqua-path-value .aqua-path-reading { min-inline-size: 0; overflow-wrap: anywhere; }
 #cfs-aqua .aqua-path-value.is-charted .aqua-path-reading {
   grid-column: 2;
-  text-align: start;
+  text-align: end;
 }
+#cfs-aqua .aqua-path-value.is-charted .aqua-path-reading:only-child { grid-column: 1 / -1; }
 #cfs-aqua .aqua-probe-sparkline {
   display: block;
   grid-column: 1;

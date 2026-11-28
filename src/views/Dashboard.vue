@@ -8,17 +8,15 @@ import { createBatchBuffer, useConnections, usePageActivity } from '../composabl
 import { adminUrl } from '../utils/config.js'
 import { useLabels } from '../utils/i18n.js'
 import { subscribedIds, ID_LIMIT } from '../utils/live.js'
-import { epochMillis, fieldText, OFFLINE_AFTER_MS } from '../utils/metrics.js'
+import { epochMillis, fieldText, OFFLINE_AFTER_MS, sortOverviewEntries } from '../utils/metrics.js'
 
-const props = defineProps({
-  selection: { type: Object, default: null },
-  sidebarVisible: { type: Boolean, required: true }
-})
-defineEmits(['toggle-sidebar'])
-
-const { sites, entries, login, list, themeOptions } = useMonitor()
+const { sites, entries, serverGroups, serverRegions, overviewFilters, login, list, themeOptions } = useMonitor()
 const { t } = useLabels()
 const search = ref('')
+const sortOptions = [
+  ['default', 'defaultOrder'], ['trafficUsed', 'sortTrafficUsed'], ['trafficPercent', 'sortTrafficPercent'],
+  ['upload', 'sortUpload'], ['download', 'sortDownload'], ['expiry', 'sortExpiry']
+]
 const now = ref(Date.now())
 const { states, connect, disconnect, stayDisconnected } = useConnections()
 let alive = true
@@ -26,11 +24,18 @@ let clock
 
 const filtered = computed(() => {
   const query = search.value.trim().toLowerCase()
-  const filter = props.selection
-  return entries.value.filter(({ row }) => (!filter || fieldText(row[filter.field]) === filter.name) &&
+  const { server_group: group, region, order } = overviewFilters
+  const matches = entries.value.filter(({ row }) => (group === null || fieldText(row.server_group) === group) &&
+    (region === null || fieldText(row.region) === region) &&
     [row.name, row.region, row.server_group, row.os, row.tags].some(value => String(value ?? '').toLowerCase().includes(query)))
+  return sortOverviewEntries(matches, order, now.value)
 })
 const loading = computed(() => sites.some(site => Boolean(site.listInFlight)))
+
+watch([serverGroups, serverRegions], ([groups, regions]) => {
+  if (overviewFilters.server_group !== null && !groups.includes(overviewFilters.server_group)) overviewFilters.server_group = null
+  if (overviewFilters.region !== null && !regions.includes(overviewFilters.region)) overviewFilters.region = null
+})
 
 function updateClock() {
   clearTimeout(clock)
@@ -105,9 +110,26 @@ onUnmounted(() => { alive = false })
   <div class="aqua-page-header">
     <h1>{{ t('overview') }}</h1>
     <div class="aqua-page-controls">
-      <button class="aqua-button aqua-sidebar-toggle" type="button" aria-controls="aqua-server-sidebar"
-        :aria-expanded="sidebarVisible" @click="$emit('toggle-sidebar')"
-      >{{ t(sidebarVisible ? 'hideSidebar' : 'showSidebar') }}</button>
+      <label class="aqua-overview-picker">
+        <span>{{ t('server_group') }}</span>
+        <select id="aqua-overview-group" v-model="overviewFilters.server_group" class="aqua-button">
+          <option :value="null">{{ t('allGroups') }}</option>
+          <option v-for="name of serverGroups" :key="name" :value="name">{{ name || t('ungrouped') }}</option>
+        </select>
+      </label>
+      <label class="aqua-overview-picker">
+        <span>{{ t('registrationRegion') }}</span>
+        <select id="aqua-overview-region" v-model="overviewFilters.region" class="aqua-button">
+          <option :value="null">{{ t('allRegions') }}</option>
+          <option v-for="name of serverRegions" :key="name" :value="name">{{ name }}</option>
+        </select>
+      </label>
+      <label class="aqua-overview-picker">
+        <span>{{ t('sortBy') }}</span>
+        <select id="aqua-overview-order" v-model="overviewFilters.order" class="aqua-button">
+          <option v-for="[order, label] of sortOptions" :key="order" :value="order">{{ t(label) }}</option>
+        </select>
+      </label>
       <input v-model="search" class="aqua-search" type="search" :placeholder="t('search')" :aria-label="t('search')">
     </div>
   </div>

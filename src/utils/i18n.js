@@ -3,8 +3,11 @@ import { useMonitor } from '../composables/useMonitor.js'
 
 const zh = {
   overview: '服务器总览', allServers: '全部服务器', search: '搜索服务器', region: '区域',
-  groups: '分类', ungrouped: '未分类', serverSidebar: '显示服务器侧栏',
+  groups: '分类', ungrouped: '未分类', serverSidebar: '详情页显示服务器侧栏',
   registrationRegion: '注册区域', hideSidebar: '隐藏侧栏', showSidebar: '显示侧栏',
+  allGroups: '全部分组', allRegions: '全部区域', sortBy: '排序', defaultOrder: '默认顺序',
+  sortTrafficUsed: '本期用量最高', sortTrafficPercent: '额度使用率最高', sortUpload: '上行速度最快',
+  sortDownload: '下行速度最快', sortExpiry: '最早到期',
   total: '总数', online: '在线', offline: '离线', admin: '管理', settings: '主题设置',
   onlineNodes: '在线节点', onlineOfTotal: '在线/总数', ipv4Only: 'IPv4', ipv6Only: 'IPv6', dualStack: '双栈',
   realtimeNetwork: '实时网速', currentRate: '实时网速', peakRate: '峰值网速', peakRateHint: '本次打开页面以来的最高汇总速率',
@@ -60,8 +63,11 @@ const zh = {
 
 const en = {
   overview: 'Servers', allServers: 'All servers', search: 'Search servers', region: 'Regions',
-  groups: 'Groups', ungrouped: 'Ungrouped', serverSidebar: 'Show server sidebar',
+  groups: 'Groups', ungrouped: 'Ungrouped', serverSidebar: 'Show server sidebar on details',
   registrationRegion: 'Regions', hideSidebar: 'Hide sidebar', showSidebar: 'Show sidebar',
+  allGroups: 'All groups', allRegions: 'All regions', sortBy: 'Sort', defaultOrder: 'Default order',
+  sortTrafficUsed: 'Highest usage', sortTrafficPercent: 'Highest quota %', sortUpload: 'Fastest upload',
+  sortDownload: 'Fastest download', sortExpiry: 'Earliest expiry',
   total: 'Total', online: 'Online', offline: 'Offline', admin: 'Admin', settings: 'Theme settings',
   onlineNodes: 'Online', onlineOfTotal: 'Online/total', ipv4Only: 'IPv4', ipv6Only: 'IPv6', dualStack: 'Dual stack',
   realtimeNetwork: 'Live rates', currentRate: 'Live Speed', peakRate: 'Peak Speed', peakRateHint: 'Highest aggregate rate since opening this page',

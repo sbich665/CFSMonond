@@ -5,7 +5,7 @@ import { adminUrl, normalizeThemeOptions } from '../src/utils/config.js'
 import { openLive, socketUrl, subscribedIds } from '../src/utils/live.js'
 import {
   bootTrafficUsage, capacityLabel, capacityRows, expiryInfo, latestPatch, overviewStats, probeRows, probeWindows,
-  trafficBreakdown, uptimeDays
+  sortOverviewEntries, trafficBreakdown, uptimeDays
 } from '../src/utils/metrics.js'
 import { osIconUrl } from '../src/utils/osIcon.js'
 
@@ -204,6 +204,30 @@ test('displayed traffic totals add up in the same unit and keep reported zeroes'
   })
   assert.deepEqual(trafficBreakdown({ download: 40, upload: 0 }), { download: 40, upload: 0, total: 40, unit: 'B' })
   assert.equal(trafficBreakdown({ download: 40, upload: null }), null)
+})
+
+test('overview sorting uses visible billing metrics, fresh speeds and valid expiry dates', () => {
+  const GiB = 1024 ** 3
+  const site = { list: { sysConfig: {} } }
+  const hidden = { list: { sysConfig: { show_tf: false, show_expire: false } } }
+  const entries = [
+    { site, row: { id: 'offline', last_updated: instant - 300_000, net_in_speed: 999, net_out_speed: 999,
+      net_rx_monthly: 0, net_tx_monthly: 0, expire_date: '2027-02-30' } },
+    { site: hidden, row: { id: 'hidden', last_updated: instant, net_in_speed: 0, net_out_speed: 0,
+      net_rx_monthly: 100 * GiB, net_tx_monthly: 0, traffic_limit: 1, expire_date: '2026-11-28' } },
+    { site, row: { id: 'first', last_updated: instant, net_in_speed: 100, net_out_speed: 25,
+      net_rx_monthly: GiB / 2, net_tx_monthly: 8 * GiB, traffic_limit: 1, traffic_calc_type: 'dl', expire_date: '2027-01-02' } },
+    { site, row: { id: 'second', last_updated: instant, net_in_speed: 25, net_out_speed: 100,
+      net_rx_monthly: GiB, net_tx_monthly: GiB / 3, traffic_limit: 10, traffic_calc_type: 'max', expire_date: '2026-12-12' } },
+    { site, row: { id: 'unknown', last_updated: instant } }
+  ]
+  const ids = order => sortOverviewEntries(entries, order, instant).map(({ row }) => row.id)
+  assert.deepEqual(ids('trafficUsed'), ['second', 'first', 'offline', 'hidden', 'unknown'])
+  assert.deepEqual(ids('trafficPercent'), ['first', 'second', 'offline', 'hidden', 'unknown'])
+  assert.deepEqual(ids('upload'), ['second', 'first', 'hidden', 'offline', 'unknown'])
+  assert.deepEqual(ids('download'), ['first', 'second', 'hidden', 'offline', 'unknown'])
+  assert.deepEqual(ids('expiry'), ['second', 'first', 'offline', 'hidden', 'unknown'])
+  assert.deepEqual(ids('default'), ['offline', 'hidden', 'first', 'second', 'unknown'])
 })
 
 test('overview probe windows keep real timestamps, gaps and zero readings', () => {

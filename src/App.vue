@@ -10,7 +10,7 @@ import { useThemeSettings } from './composables/useThemeSettings.js'
 import { adminUrl } from './utils/config.js'
 import { useLabels } from './utils/i18n.js'
 
-const { runtime, sites, challenges, themeOptions, bootstrap } = useMonitor()
+const { runtime, sites, challenges, themeOptions, overviewFilters, bootstrap } = useMonitor()
 const { t, locale } = useLabels()
 const settings = useThemeSettings()
 const route = useRoute()
@@ -18,7 +18,6 @@ const router = useRouter()
 const ready = ref(false)
 const settingsOpen = ref(false)
 const sidebarVisible = ref(themeOptions.value.show_server_sidebar)
-const selection = ref(null)
 const media = window.matchMedia('(prefers-color-scheme: dark)')
 const systemDark = ref(media.matches)
 const primary = computed(() => sites[0])
@@ -30,15 +29,16 @@ function changeSystem({ matches }) {
   systemDark.value = matches
 }
 
-function setSidebar(visible) {
-  sidebarVisible.value = visible
-  if (!visible) selection.value = null
+watch(() => themeOptions.value.show_server_sidebar, visible => { sidebarVisible.value = visible })
+
+function toggleSidebar() {
+  sidebarVisible.value = !sidebarVisible.value
 }
-watch(() => themeOptions.value.show_server_sidebar, setSidebar)
 
 function selectServers(filter) {
-  selection.value = filter
-  if (route.name !== 'dashboard') void router.push({ name: 'dashboard' })
+  overviewFilters.server_group = filter?.field === 'server_group' ? filter.name : null
+  overviewFilters.region = filter?.field === 'region' ? filter.name : null
+  void router.push({ name: 'dashboard' })
 }
 
 watchEffect(() => {
@@ -87,10 +87,10 @@ onUnmounted(() => media.removeEventListener('change', changeSystem))
       <p v-if="!ready" class="aqua-state" role="status">{{ t('opening') }}</p>
       <RouterView v-else v-slot="{ Component, route }">
         <div v-if="Component" class="aqua-layout">
-          <ServerSidebar v-show="sidebarVisible" :selection="selection" @select="selectServers" />
+          <ServerSidebar v-if="route.name === 'server'" v-show="sidebarVisible" @select="selectServers" />
           <main class="aqua-main">
-            <component :is="Component" :key="route.fullPath" :sidebar-visible="sidebarVisible"
-              v-bind="route.name === 'dashboard' ? { selection } : {}" @toggle-sidebar="setSidebar(!sidebarVisible)"
+            <component :is="Component" :key="route.fullPath"
+              v-bind="route.name === 'server' ? { sidebarVisible, onToggleSidebar: toggleSidebar } : {}"
             />
           </main>
         </div>
