@@ -169,12 +169,12 @@ test('overview counts online stacks separately and sums reported rates and visib
   ]
   assert.deepEqual(overviewStats(entries, instant), {
     total: 4, online: 3, ipv4Only: 1, ipv6Only: 1, dualStack: 1,
-    download: 306, upload: 12, bootTraffic: 140, periodTraffic: 150
+    download: 306, upload: 12, bootTraffic: { download: 130, upload: 10 }, periodTraffic: { download: 120, upload: 30 }
   })
   const missing = overviewStats([{ site: visible, row: { last_updated: instant } }], instant)
   assert.equal(missing.download, null)
-  assert.equal(missing.bootTraffic, null)
-  assert.equal(missing.periodTraffic, null)
+  assert.deepEqual(missing.bootTraffic, { download: null, upload: null })
+  assert.deepEqual(missing.periodTraffic, { download: null, upload: null })
   assert.equal(overviewStats(entries, instant + 300_000).download, 0)
 })
 

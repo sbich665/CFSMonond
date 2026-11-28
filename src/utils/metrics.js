@@ -79,7 +79,8 @@ function addReportedBytes(total, value) {
 export function overviewStats(entries, now) {
   const stats = {
     total: entries.length, online: 0, ipv4Only: 0, ipv6Only: 0, dualStack: 0,
-    download: null, upload: null, bootTraffic: null, periodTraffic: null
+    download: null, upload: null,
+    bootTraffic: { download: null, upload: null }, periodTraffic: { download: null, upload: null }
   }
   for (const { row, site } of entries) {
     if (isOnline(row, now)) {
@@ -93,8 +94,10 @@ export function overviewStats(entries, now) {
       stats.upload = addReportedBytes(stats.upload, row.net_out_speed)
     }
     if (site.list?.sysConfig?.show_tf !== false) {
-      stats.bootTraffic = addReportedBytes(addReportedBytes(stats.bootTraffic, row.net_rx), row.net_tx)
-      stats.periodTraffic = addReportedBytes(addReportedBytes(stats.periodTraffic, row.net_rx_monthly), row.net_tx_monthly)
+      stats.bootTraffic.download = addReportedBytes(stats.bootTraffic.download, row.net_rx)
+      stats.bootTraffic.upload = addReportedBytes(stats.bootTraffic.upload, row.net_tx)
+      stats.periodTraffic.download = addReportedBytes(stats.periodTraffic.download, row.net_rx_monthly)
+      stats.periodTraffic.upload = addReportedBytes(stats.periodTraffic.upload, row.net_tx_monthly)
     }
   }
   if (stats.total && !stats.online) {

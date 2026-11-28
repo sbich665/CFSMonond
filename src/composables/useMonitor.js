@@ -7,6 +7,7 @@ export const MonitorKey = Symbol('monitor')
 export function createMonitor(runtime) {
   const challenges = shallowRef([])
   const paused = new Map()
+  const ratePeaks = shallowRef({ download: null, upload: null })
   const themeOptions = shallowRef(normalizeThemeOptions())
   let redirected = false
 
@@ -77,7 +78,7 @@ export function createMonitor(runtime) {
     return request
   }
 
-  return { runtime, sites, entries, challenges, paused, themeOptions, bootstrap, login, list }
+  return { runtime, sites, entries, challenges, paused, ratePeaks, themeOptions, bootstrap, login, list }
 }
 
 export function useMonitor() {
