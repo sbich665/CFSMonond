@@ -5,7 +5,7 @@ import ProbeMatrix from './ProbeMatrix.vue'
 import { useMonitor } from '../composables/useMonitor.js'
 import { useLabels } from '../utils/i18n.js'
 import { bytes, capacityLabel, capacityRows, epochMillis, expiryInfo, fieldText, format, hasIpVersion, isOnline,
-  number, percent, percentLabel, probeRows, timeLabel } from '../utils/metrics.js'
+  number, percent, percentLabel, probeRows, probeWindows, timeLabel, uptimeDays } from '../utils/metrics.js'
 import { osIconUrl } from '../utils/osIcon.js'
 
 const props = defineProps({
@@ -63,7 +63,8 @@ const boot = computed(() => {
   const timestamp = epochMillis(value)
   return timestamp === null ? null : {
     label: timeLabel(value, true),
-    iso: new Date(timestamp).toISOString()
+    iso: new Date(timestamp).toISOString(),
+    days: uptimeDays(timestamp, online.value ? props.now : epochMillis(server.value.last_updated))
   }
 })
 const directions = computed(() => {
@@ -76,8 +77,12 @@ const directions = computed(() => {
   return themeOptions.value.speed_order === 'download-first' ? rates.reverse() : rates
 })
 const hasNetwork = computed(() => Boolean(connections.value.length || boot.value || directions.value.length))
+const probeHistory = computed(() => switches.value.show_three_net_details === true
+  ? probeWindows(server.value.ping, server.value.loss, props.site.config?.latency_window)
+  : null)
 const paths = computed(() => switches.value.show_three_net_details === true
-  ? probeRows(server.value, props.site.config, t('timeout'), locale.value).slice(0, themeOptions.value.three_net_panel_count)
+  ? probeRows(server.value, props.site.config, t('timeout'), locale.value, false, probeHistory.value)
+    .slice(0, themeOptions.value.three_net_panel_count)
   : [])
 const expiry = computed(() => switches.value.show_expire !== false ? expiryInfo(server.value.expire_date, props.now) : null)
 const expiryText = computed(() => {
@@ -124,7 +129,8 @@ function progress(value) {
       <span class="aqua-status"><i class="aqua-lamp" :class="{ 'is-offline': !online }"></i>{{ t(online ? 'online' : 'offline') }}</span>
       <div v-if="metadata.length" class="aqua-server-tags">
         <span v-for="(item, index) in metadata" :key="item.key" class="aqua-meta-item">
-          <span v-if="index > 0" class="aqua-meta-separator" aria-hidden="true">|</span>
+          <span v-if="index > 0 && item.className !== 'aqua-ip-tag' && metadata[index - 1].className !== 'aqua-ip-tag'"
+            class="aqua-meta-separator" aria-hidden="true">|</span>
           <span class="aqua-meta-value" :class="item.className" :title="item.title">{{ item.text }}</span>
         </span>
       </div>
@@ -154,7 +160,13 @@ function progress(value) {
             <dt>{{ label }}</dt><dd><b>{{ value }}</b></dd>
           </div>
           <div v-if="boot" class="aqua-server-boot">
-            <dt class="aqua-sr-only">{{ t('boot') }}</dt><dd><time :datetime="boot.iso">{{ boot.label }}</time></dd>
+            <dt class="aqua-sr-only">{{ t('boot') }}</dt>
+            <dd>
+              <time :datetime="boot.iso">{{ boot.label }}</time>
+              <span v-if="boot.days !== null" class="aqua-uptime"
+                :title="t(online ? 'uptime' : 'uptimeAtLastReport')"
+              ><span class="aqua-sr-only">{{ t('uptime') }} </span>{{ t('days', { days: boot.days }) }}</span>
+            </dd>
           </div>
         </dl>
         <dl v-if="directions.length" class="aqua-transfer">

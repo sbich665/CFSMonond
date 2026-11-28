@@ -3,7 +3,9 @@ import test from 'node:test'
 import { createApi } from '../src/utils/api.js'
 import { adminUrl, normalizeThemeOptions } from '../src/utils/config.js'
 import { openLive, socketUrl, subscribedIds } from '../src/utils/live.js'
-import { capacityLabel, capacityRows, expiryInfo, latestPatch, overviewStats, probeRows } from '../src/utils/metrics.js'
+import {
+  capacityLabel, capacityRows, expiryInfo, latestPatch, overviewStats, probeRows, probeWindows, uptimeDays
+} from '../src/utils/metrics.js'
 import { osIconUrl } from '../src/utils/osIcon.js'
 
 const base = 'https://test-worker.example'
@@ -176,6 +178,44 @@ test('overview counts online stacks separately and sums reported rates and visib
   assert.deepEqual(missing.bootTraffic, { download: null, upload: null })
   assert.deepEqual(missing.periodTraffic, { download: null, upload: null })
   assert.equal(overviewStats(entries, instant + 300_000).download, 0)
+})
+
+test('overview probe windows keep real timestamps, gaps and zero readings', () => {
+  const later = instant + 420_000
+  const latest = instant + 720_000
+  const windows = probeWindows([
+    { ts: latest, ct: 60, cu: 26, node_1: -1 },
+    { ts: instant / 1000, ct: 0, cu: 25 },
+    { ts: later, ct: null },
+    { ts: 'unreported', ct: 9999 }
+  ], [
+    { ts: instant, ct: 0 }, { ts: later, ct: 100, bd: 0 },
+    { ts: latest, ct: 20, cu: false, bd: 0, node_1: 101 }
+  ], { hours: 2, points: 20 })
+  const rows = probeRows({ ping_ct: 8, loss_ct: 0, ping_cu: 30, ping_cm: 0, loss_cm: 0,
+    ping_bd: 12, loss_node_1: false }, {}, 'Timeout', 'en', false, windows)
+  assert.deepEqual(rows.map(row => row.id), ['ct', 'cm', 'bd'])
+  const [ct, cm, bd] = rows
+  assert.equal(ct.delay, '30 ms')
+  assert.equal(ct.lossRate, '40%')
+  assert.equal(ct.delayAveraged, true)
+  assert.deepEqual(ct.trend.delay.points, [{ time: instant, value: 0 }, { time: later, value: null }, { time: latest, value: 60 }])
+  assert.equal(ct.trend.maxGap, 720_000)
+  assert.deepEqual([cm.delay, cm.lossRate, cm.trend], ['0 ms', '0%', null])
+  assert.deepEqual([bd.delayAveraged, bd.lossAveraged, bd.lossRate], [false, true, '0%'])
+  assert.equal(probeWindows([], [], {}), null)
+  assert.equal(probeRows({ ping_cu: false, loss_cu: false }, {}, 'Timeout', 'en', false, windows).length, 2)
+  assert.equal(probeRows({ ping_ct: 8, loss_ct: 0 }, {}, 'Timeout', 'en')[0].trend, null)
+})
+
+test('uptime uses completed 24-hour periods and requires a valid interval', () => {
+  const day = 86_400_000
+  assert.equal(uptimeDays(instant, instant + day - 1), 0)
+  assert.equal(uptimeDays(instant, instant + day), 1)
+  assert.equal(uptimeDays(instant, instant + 11 * day + 5000), 11)
+  assert.equal(uptimeDays(instant, instant - 1000), null)
+  assert.equal(uptimeDays(instant, null), null)
+  assert.equal(uptimeDays(null, instant), null)
 })
 
 test('OS logos use the reporting Worker and published asset names', () => {

@@ -41,6 +41,11 @@ export function isOnline(server, now = Date.now()) {
   return lastUpdated !== null && now - lastUpdated < OFFLINE_AFTER_MS
 }
 
+export function uptimeDays(boot, end) {
+  if (!Number.isFinite(boot) || !Number.isFinite(end) || end < boot) return null
+  return Math.floor((end - boot) / DAY)
+}
+
 export function number(value) {
   if ((typeof value !== 'number' && typeof value !== 'string') ||
       (typeof value === 'string' && !value.trim())) return null
@@ -154,17 +159,68 @@ export function probeReading(value, unit, timeout) {
   return Number.isFinite(value) ? format(value, unit) : ''
 }
 
-export function probeRows(server, config, timeout, locale, includeTargets = false) {
+function timedProbeSamples(samples) {
+  if (!Array.isArray(samples)) return []
+  return samples.flatMap(sample => {
+    const time = epochMillis(sample?.ts)
+    return time === null ? [] : [{ time, sample }]
+  }).sort((a, b) => a.time - b.time)
+}
+
+function probeSeries(samples, id, maximum) {
+  let total = 0
+  let count = 0
+  const points = samples.map(({ time, sample }) => {
+    const value = number(sample[id])
+    if (value === null || value < 0 || value > maximum) return { time, value: null }
+    total += value
+    count += 1
+    return { time, value }
+  })
+  return count ? { points, average: total / count } : { points: [], average: null }
+}
+
+function disabledProbe(value) {
+  return value === false || value === 'false'
+}
+
+export function probeWindows(ping, loss, window) {
+  const delays = timedProbeSamples(ping)
+  const losses = timedProbeSamples(loss)
+  if (!delays.length && !losses.length) return null
+  const hours = number(window?.hours)
+  const points = number(window?.points)
+  const interval = (hours > 0 ? hours : 2) * 3_600_000 / (points > 0 ? points : 20)
+  // Sampling keeps real report timestamps within each bucket. Allow that jitter,
+  // but leave a break when adjacent readings span more than two buckets.
+  const maxGap = 2 * interval
+  return new Map(PROBES.map(([id]) => [id, {
+    delay: probeSeries(delays, id, Infinity),
+    loss: probeSeries(losses, id, 100),
+    disabled: disabledProbe(losses.at(-1)?.sample[id]),
+    maxGap
+  }]))
+}
+
+export function probeRows(server, config, timeout, locale, includeTargets = false, windows = null) {
   return PROBES.flatMap(([id, target, name, zh, en]) => {
     const ping = server['ping_' + id]
     const loss = server['loss_' + id]
-    const delay = probeReading(ping, ' ms', timeout)
-    const lossRate = probeReading(loss, '%', timeout)
+    const history = windows?.get(id)
+    if (!includeTargets && (disabledProbe(loss) || (loss == null && history?.disabled))) return []
+    const delayAverage = history?.delay.average ?? null
+    const lossAverage = history?.loss.average ?? null
+    const delayValue = delayAverage ?? ping
+    const lossValue = lossAverage ?? loss
+    const delay = probeReading(delayValue, ' ms', timeout)
+    const lossRate = probeReading(lossValue, '%', timeout)
     const address = server[target]
     if (!delay && !lossRate && !(includeTargets && address)) return []
     return [{
       id, target, address, name: config[name] || (locale === 'zh' ? zh : en),
-      delay, lossRate, delayTimeout: ping === null, lossTimeout: loss === null
+      delay, lossRate, delayTimeout: delayValue === null, lossTimeout: lossValue === null,
+      delayAveraged: delayAverage !== null, lossAveraged: lossAverage !== null,
+      trend: delayAverage !== null || lossAverage !== null ? history : null
     }]
   })
 }
